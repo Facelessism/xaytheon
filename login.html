@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sign in — XAYTHEON</title>
+  <title>Sign in – XAYTHEON</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="style.css" />
 
@@ -16,22 +16,24 @@
       display: grid;
       place-items: center;
       padding: 40px 16px;
+      background: var(--bg-primary);
     }
     .auth-card {
       width: 100%;
       max-width: 420px;
-      background: #fff;
-      border: 1px solid rgba(0,0,0,0.1);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-color);
       border-radius: 14px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+      box-shadow: var(--shadow-md);
       padding: 24px;
     }
     .auth-title {
       font-size: 1.8em;
       margin-bottom: 8px;
+      color: var(--text-primary);
     }
     .auth-sub {
-      opacity: 0.7;
+      color: var(--text-secondary);
       margin-bottom: 20px;
     }
     .auth-form {
@@ -40,16 +42,20 @@
     }
     .auth-form label {
       font-weight: 600;
+      color: var(--text-primary);
     }
     .auth-form input {
       padding: 12px 14px;
-      border: 1px solid rgba(0,0,0,0.2);
+      border: 1px solid var(--border-color-strong);
       border-radius: 8px;
       outline: none;
       font-size: 1em;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      transition: border-color 0.3s ease;
     }
     .auth-form input:focus {
-      border-color: #000;
+      border-color: var(--text-primary);
     }
     .auth-actions {
       display: flex;
@@ -57,7 +63,7 @@
       align-items: center;
     }
     .muted {
-      opacity: 0.75;
+      color: var(--text-muted);
       font-size: 0.95em;
     }
     .status {
@@ -67,30 +73,79 @@
     .center {
       text-align: center;
     }
+    .center a {
+      color: var(--link-color);
+      text-decoration: none;
+    }
+    .center a:hover {
+      color: var(--link-hover);
+      text-decoration: underline;
+    }
+    .theme-toggle-auth {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: transparent;
+      border: none;
+      width: 36px;
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      padding: 6px;
+      border-radius: 8px;
+      z-index: 100;
+    }
+    .theme-toggle-auth:hover {
+      background: var(--border-color);
+      transform: scale(1.05);
+    }
+    .theme-toggle-auth:focus {
+      outline: 2px solid var(--text-primary);
+      outline-offset: 2px;
+    }
+    .theme-toggle-auth svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--text-primary);
+      fill: none;
+      transition: all 0.3s ease;
+    }
+    .theme-toggle-auth:hover svg {
+      transform: rotate(15deg);
+    }
   </style>
 </head>
 
 <body>
   
   <nav class="navbar">
+    <div class="nav-container">
+      <a class="logo" href="index.html" aria-label="Back to Home">
+        <img class="logo-img" src="assets/logo/thelogo.png" alt="XAYTHEON logo" />
+      </a>
+      <ul class="nav-menu">
+        <li><a class="nav-link" href="index.html">Home</a></li>
+      </ul>
+    </div>
+  </nav>
 
-  <div class="nav-container">
-
-    <a class="logo" href="index.html" aria-label="Back to Home">
-
-      <img class="logo-img" src="assets/logo/thelogo.png" alt="XAYTHEON logo" />
-
-    </a>
-
-    <ul class="nav-menu">
-
-      <li><a class="nav-link" href="index.html">Home</a></li>
-
-    </ul>
-
-  </div>
-
-</nav>
+  <button class="theme-toggle-auth" id="theme-toggle-auth" aria-label="Toggle dark mode">
+    <svg class="theme-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="5" />
+      <line x1="12" y1="1" x2="12" y2="3" />
+      <line x1="12" y1="21" x2="12" y2="23" />
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+      <line x1="1" y1="12" x2="3" y2="12" />
+      <line x1="21" y1="12" x2="23" y2="12" />
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+    </svg>
+  </button>
   
   <div class="auth-wrap">
     <div class="auth-card">
@@ -112,12 +167,10 @@
         <div id="login-status" class="status muted" aria-live="polite"></div>
       </form>
       
-
       <div class="center muted" style="margin-top:12px;">
-  New here?
-  <a href="register.html">Create an account</a>
-</div>
-
+        New here?
+        <a href="register.html">Create an account</a>
+      </div>
 
       <div class="center muted" style="margin-top:12px;">
         Authentication is handled securely by the Xaytheon backend.
@@ -127,6 +180,22 @@
 
   <script src="auth.js"></script>
   <script>
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('theme-toggle-auth');
+    const htmlElement = document.documentElement;
+    
+    // Load saved theme or default to light
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    htmlElement.setAttribute('data-theme', savedTheme);
+    
+    themeToggle.addEventListener('click', () => {
+      const currentTheme = htmlElement.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      htmlElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+    });
+
+    // Login form handling
     const form = document.getElementById("login-form");
     const emailEl = document.getElementById("login-email");
     const passwordEl = document.getElementById("login-password");
