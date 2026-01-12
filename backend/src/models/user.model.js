@@ -104,3 +104,100 @@ exports.updateViewHistory = (userId, historyJson) =>
       }
     );
   });
+
+exports.setPasswordResetToken = (email, token, expiresAt) =>
+  new Promise((resolve, reject) => {
+    if (!email || typeof email !== 'string' || email.length > 254) {
+      return reject(new Error('Invalid email'));
+    }
+    if (!token || typeof token !== 'string' || token.length > 255) {
+      return reject(new Error('Invalid token'));
+    }
+
+    db.run(
+      `UPDATE users 
+       SET password_reset_token = ?, 
+           password_reset_expires = ?,
+           updated_at = CURRENT_TIMESTAMP 
+       WHERE email = ?`,
+      [token, expiresAt, email],
+      function (err) {
+        if (err) reject(err);
+        else if (this.changes === 0) reject(new Error('User not found'));
+        else resolve(this.changes);
+      }
+    );
+  });
+
+exports.findByResetToken = (token) =>
+  new Promise((resolve, reject) => {
+    if (!token || typeof token !== 'string' || token.length > 255) {
+      return reject(new Error('Invalid token'));
+    }
+
+    db.get(
+      `SELECT id, email, password_reset_token, password_reset_expires 
+       FROM users 
+       WHERE password_reset_token = ?`,
+      [token],
+      (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      }
+    );
+  });
+
+exports.updatePassword = (userId, hashedPassword) =>
+  new Promise((resolve, reject) => {
+    if (!userId || (typeof userId !== 'number' && typeof userId !== 'string')) {
+      return reject(new Error('Invalid user ID'));
+    }
+    if (!hashedPassword || typeof hashedPassword !== 'string') {
+      return reject(new Error('Invalid password'));
+    }
+
+    const id = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+    if (isNaN(id) || id <= 0) {
+      return reject(new Error('Invalid user ID'));
+    }
+
+    db.run(
+      `UPDATE users 
+       SET password = ?, 
+           password_reset_token = NULL,
+           password_reset_expires = NULL,
+           updated_at = CURRENT_TIMESTAMP 
+       WHERE id = ?`,
+      [hashedPassword, id],
+      function (err) {
+        if (err) reject(err);
+        else if (this.changes === 0) reject(new Error('User not found'));
+        else resolve(this.changes);
+      }
+    );
+  });
+
+exports.clearResetToken = (userId) =>
+  new Promise((resolve, reject) => {
+    if (!userId || (typeof userId !== 'number' && typeof userId !== 'string')) {
+      return reject(new Error('Invalid user ID'));
+    }
+
+    const id = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+    if (isNaN(id) || id <= 0) {
+      return reject(new Error('Invalid user ID'));
+    }
+
+    db.run(
+      `UPDATE users 
+       SET password_reset_token = NULL,
+           password_reset_expires = NULL,
+           updated_at = CURRENT_TIMESTAMP 
+       WHERE id = ?`,
+      [id],
+      function (err) {
+        if (err) reject(err);
+        else resolve(this.changes);
+      }
+    );
+  });

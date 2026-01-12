@@ -27,8 +27,10 @@ db.serialize(() => {
     const hasCreatedAt = columnNames.includes("created_at");
     const hasUpdatedAt = columnNames.includes("updated_at");
     const hasViewHistory = columnNames.includes("view_history");
+    const hasResetToken = columnNames.includes("password_reset_token");
+    const hasResetExpires = columnNames.includes("password_reset_expires");
 
-    if (hasRefreshToken && hasCreatedAt && hasUpdatedAt && hasViewHistory) {
+    if (hasRefreshToken && hasCreatedAt && hasUpdatedAt && hasViewHistory &&  hasResetToken && hasResetExpires) {
       console.log("✅ Database is already up to date!");
       db.close();
       return;
@@ -88,13 +90,37 @@ db.serialize(() => {
             console.error("❌ Error adding updated_at column:", err);
           } else {
             console.log("✅ Added updated_at column");
-          }
+          } 
+        }
+      );
+    }
 
+    if (!hasResetToken) {
+      db.run(
+        "ALTER TABLE users ADD COLUMN password_reset_token TEXT",
+        (err) => {
+          if (err) {
+            console.error("❌ Error adding password_reset_token:", err);
+          } else {
+            console.log("✅ Added password_reset_token column");
+          }
+        }
+      );
+    }
+
+    if (!hasResetExpires) {
+      db.run(
+        "ALTER TABLE users ADD COLUMN password_reset_expires DATETIME",
+        (err) => {
+          if (err){
+            console.error("❌ Error adding password_reset_expires column:", err);
+          } else{
+            console.log("✅ Added password_reset_expires column");
+          } 
           // After all migrations, verify the schema
           db.all("PRAGMA table_info(users)", (err, newColumns) => {
-            if (err) {
-              console.error("❌ Error verifying migration:", err);
-            } else {
+            if (err) console.error("❌ Error verifying migration:", err);
+            else {
               console.log("\n📋 Updated columns:", newColumns.map(col => col.name).join(", "));
               console.log("\n✅ Migration completed successfully!");
             }

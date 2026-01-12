@@ -406,4 +406,83 @@
   window.addEventListener("beforeunload", () => {
     // Tokens cleared automatically on page close
   });
+
+  // Ensure XAYTHEON_AUTH exists
+window.XAYTHEON_AUTH = window.XAYTHEON_AUTH || {};
+
+/**
+ * Request password reset (forgot password)
+ * @param {string} email - User's email address
+ */
+window.XAYTHEON_AUTH.forgotPassword = async function(email) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/forgot-password`, {  
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to send reset email");
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Reset password using token
+ * @param {string} token - Reset token from email
+ * @param {string} newPassword - New password
+ */
+window.XAYTHEON_AUTH.resetPassword = async function(token, newPassword) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, newPassword }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to reset password");
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Reset password error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Validate reset token
+ * @param {string} token - Reset token to validate
+ */
+window.XAYTHEON_AUTH.validateResetToken = async function(token) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/validate-reset-token?token=${encodeURIComponent(token)}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.valid) {
+      throw new Error(data.message || "Invalid token");
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Validate token error:", error);
+    throw error;
+  }
+};
+
 })();
