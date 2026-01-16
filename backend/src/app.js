@@ -14,6 +14,7 @@ const compareRoutes = require("./routes/compare.routes");
 const collabRoutes = require("./routes/collab.routes");
 const heatmapRoutes = require("./routes/heatmap.routes");
 const sentimentRoutes = require("./routes/sentiment.routes");
+const workflowRoutes = require("./routes/workflow.routes");
 
 const app = express();
 
@@ -105,6 +106,7 @@ app.use("/api/compare", compareRoutes);
 app.use("/api/collab", collabRoutes);
 app.use("/api/heatmap", heatmapRoutes);
 app.use("/api/sentiment", sentimentRoutes);
+app.use("/api/workflow", workflowRoutes);
 
 app.use((err, req, res, next) => {
   console.error("Error:", err);
