@@ -169,6 +169,7 @@
     <div class="auth-card">
       <div class="auth-title">Create account</div>
       <div class="auth-sub">Register using your email and password</div>
+      <div id="auth-error" class="auth-error" aria-live="assertive"></div>
 
       <form id="register-form" class="auth-form">
         <label for="reg-email">Email</label>
@@ -194,6 +195,13 @@
         <div class="auth-actions">
           <button class="btn btn-primary" type="submit">Register</button>
           <a class="btn btn-outline" href="login.html">Back</a>
+        </div>
+
+        <div class="center muted" style="margin-top:16px;">
+          Already have an account?
+          <a href="login.html" style="color: var(--text-primary); font-weight: 600;">
+            Login
+          </a>
         </div>
 
         <div class="center muted" style="margin-top:12px;">
@@ -315,16 +323,17 @@
           window.location.href = "login.html";
         }, 1500);
       } catch (err) {
-        setLoading(false);
-        if (err.message.includes("fetch") || err.message.includes("network")) {
-          showError("Network error. Please check your connection and try again.");
-        } else if (err.message.includes("exists") || err.message.includes("already")) {
-          emailEl.classList.add("input-error");
-          showError("An account with this email already exists");
-        } else {
-          showError(err.message || "Registration failed. Please try again.");
-        }
-      }
+  setLoading(false);
+
+  const message = getAuthErrorMessage(err);
+  showError(message);
+
+  // Highlight field for known registration errors
+  if (err.code === "USER_EXISTS") {
+    emailEl.classList.add("input-error");
+  }
+}
+
     });
   </script>
 </body>

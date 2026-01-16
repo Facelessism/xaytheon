@@ -95,7 +95,13 @@
   function setStatus(msg, level='info'){
     if(!statusEl) return;
     statusEl.textContent = msg;
-    statusEl.style.color = level==='error' ? '#b91c1c' : '#111827';
+    statusEl.style.color =
+  level === 'error'
+    ? '#ef4444'
+    : document.documentElement.dataset.theme === 'dark'
+      ? '#e5e7eb'
+      : '#111827';
+
   }
 
   function renderCards(items){
@@ -227,6 +233,54 @@
     }catch{}
     return null;
   }
+
+
+  async function update(){
+    const language = (langEl.value||'').trim();
+    const topic = (topicEl.value||'').trim();
+    const daysValue = (windowEl.value||'').trim();
+   const kValue = kEl.value.trim();
+
+
+    // Validate language
+    if (language && language.length > 20) {
+      setStatus('Language must be 20 characters or less.', 'error');
+      return;
+    }
+
+    // Validate topic
+    if (topic && topic.length > 50) {
+      setStatus('Topic must be 50 characters or less.', 'error');
+      return;
+    }
+
+    // Validate days
+    const days = parseInt(daysValue, 10);
+    if (isNaN(days) || days < 1 || days > 365) {
+      setStatus('Days must be a number between 1 and 365.', 'error');
+      return;
+    }
+
+    // Validate k
+    if (!kValue) {
+  statusEl.textContent = "Please enter a value for Top K.";
+  statusEl.classList.add("error");
+  return;
+}
+
+
+if (!/^\d+$/.test(kValue)) {
+  setStatus('Top K must be a whole number between 1 and 20.', 'error');
+  return;
+}
+
+const k = Number(kValue);
+if (k < 1 || k > 20) {
+  setStatus('Top K must be between 1 and 20.', 'error');
+  return;
+}
+
+
   
   function updateCacheInfo(key, entry) {
     if (!cacheInfoEl) return;
@@ -261,6 +315,7 @@
       }
     } catch {}
   }
+
 
   // Debounced update function
   const debouncedUpdate = debounce(async function update(){
@@ -369,7 +424,12 @@
     topicEl.value = '';
     windowEl.value = '30';
     kEl.value = '10';
+
+     if (statusEl) statusEl.textContent = '';
+    update();
+
     debouncedUpdate();
+
   });
 
   // Initial load with defaults

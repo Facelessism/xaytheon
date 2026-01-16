@@ -9,6 +9,7 @@ let currentUser = null;
 let analyticsData = [];
 let charts = {};
 let offlineManager;
+let socket; // Socket.io instance
 
 // Chart color schemes
 const COLORS = {
@@ -44,6 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load initial data
     if (currentUser) {
         await loadAnalyticsData();
+        initWebSocket(); // Initialize real-time updates
     }
 });
 
@@ -766,4 +768,101 @@ function showSuccess(message) {
 function showError(message) {
     console.error('❌', message);
     showToast(message, 'error');
+}
+/**
+ * Initialize WebSocket connection
+ */
+function initWebSocket() {
+    if (socket) return;
+
+    const token = localStorage.getItem('authToken');
+    if (!token) return;
+
+    const socketUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : window.location.origin;
+    socket = io(socketUrl, {
+        auth: {
+            token: token
+        },
+        transports: ['websocket', 'polling']
+    });
+
+    socket.on('connect', () => {
+        console.log('🔌 Connected to WebSocket server');
+        socket.emit('join_analytics');
+
+        // Show live indicator
+        const liveIndicator = document.getElementById('live-indicator');
+        if (liveIndicator) {
+            liveIndicator.style.display = 'flex';
+        }
+    });
+
+    socket.on('analytics_update', (update) => {
+        // console.log('📡 Real-time update received:', update);
+        handleRealTimeUpdate(update);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('❌ Disconnected from WebSocket server');
+        const liveIndicator = document.getElementById('live-indicator');
+        if (liveIndicator) {
+            liveIndicator.style.display = 'none';
+        }
+    });
+
+    socket.on('connect_error', (err) => {
+        console.error('WebSocket connection error:', err);
+    });
+}
+
+/**
+ * Handle real-time analytics update
+ * @param {Object} update 
+ */
+function handleRealTimeUpdate(update) {
+    if (!update || !update.data) return;
+
+    // Flash live indicator
+    const liveDot = document.querySelector('.live-dot');
+    if (liveDot) {
+        liveDot.style.color = '#fff';
+        setTimeout(() => {
+            liveDot.style.color = 'currentColor';
+        }, 300);
+    }
+
+    // Update "Last updated" to "LIVE"
+    const lastUpdatedInfo = document.getElementById('last-updated-time');
+    if (lastUpdatedInfo) {
+        lastUpdatedInfo.textContent = 'LIVE';
+    }
+
+    // Apply incremental updates to the latest data point
+    // In a real app, we might push a new data point or update the existing one
+    // Here we'll update existing latest point for visual effect or push if needed
+
+    if (analyticsData.length > 0) {
+        const latest = analyticsData[analyticsData.length - 1];
+
+        // Apply changes
+        latest.stars += (update.data.stars_change || 0);
+        latest.followers += (update.data.followers_change || 0);
+        latest.total_commits += (update.data.commits_change || 0);
+
+        // Only re-render if visible
+        requestAnimationFrame(() => {
+            updateMetrics();
+
+            // Only update charts occasionally or if significant change to avoid performance hit
+            // For this demo, we'll update charts too to show movement
+            charts.stars.data.datasets[0].data[analyticsData.length - 1] = latest.stars;
+            charts.stars.update('none'); // efficient update
+
+            charts.followers.data.datasets[0].data[analyticsData.length - 1] = latest.followers;
+            charts.followers.update('none');
+
+            charts.commits.data.datasets[0].data[analyticsData.length - 1] = latest.total_commits;
+            charts.commits.update('none');
+        });
+    }
 }

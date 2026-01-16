@@ -1,5 +1,6 @@
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
+const { startRealTimeSimulation } = require("../services/analytics.socket.service");
 
 let io;
 const userSockets = new Map(); // userId -> Set of socket IDs
@@ -72,6 +73,16 @@ function initializeSocket(server) {
             });
         });
 
+        // Analytics rooms
+        socket.on("join_analytics", () => {
+            socket.join("analytics_watchers");
+            // console.log(`User ${socket.userId} joined analytics watchers`);
+        });
+
+        socket.on("leave_analytics", () => {
+            socket.leave("analytics_watchers");
+        });
+
         // Handle disconnect
         socket.on("disconnect", () => {
             console.log(`❌ User ${socket.userId} disconnected: ${socket.id}`);
@@ -97,6 +108,10 @@ function initializeSocket(server) {
     });
 
     console.log("🔌 WebSocket server initialized");
+
+    // Start analytics simulation
+    startRealTimeSimulation(io);
+
     return io;
 }
 

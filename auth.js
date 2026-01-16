@@ -2,16 +2,37 @@
 window.XAYTHEON_AUTH = window.XAYTHEON_AUTH || {};
 
 (function () {
+  const API_BASE_URL =
+  window.location.protocol === "https:"
+    ? "https://your-api-domain.com/api/auth"
+    : "http://localhost:5000/api/auth";
   console.log("Xaytheon Auth Script Loaded"); // Debug log
 
   // For local dev, using 127.0.0.1 is safer than localhost to avoid IPv6 issues
   const API_BASE_URL = "http://127.0.0.1:5000/api/auth";
+
 
   const REQUEST_TIMEOUT = 30000;
 
   async function fetchWithTimeout(resource, options = {}) {
     const { timeout = REQUEST_TIMEOUT } = options;
     const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+try {
+  const response = await fetch(resource, {
+    ...options,
+    signal: controller.signal,
+  });
+  clearTimeout(timeoutId);
+  return response;
+} catch (err) {
+  clearTimeout(timeoutId);
+  if (err.name === "AbortError") {
+    throw { code: "TIMEOUT" };
+  }
+  throw err;
+}
+
     const id = setTimeout(() => controller.abort(), timeout);
     const response = await fetch(resource, {
       ...options,
@@ -27,15 +48,31 @@ window.XAYTHEON_AUTH = window.XAYTHEON_AUTH || {};
   let refreshTimer = null;
   let lastAuthError = null;
 
-  function setAccessToken(token, expiresIn, user) {
-    accessToken = token;
-    if (user) currentUser = user;
-    tokenExpiryTime = Date.now() + (expiresIn - 60) * 1000;
-    lastAuthError = null; // Clear error on success
-    scheduleTokenRefresh();
-    window.dispatchEvent(new CustomEvent('xaytheon:authchange', { detail: { user: currentUser } }));
-  }
+  function isTokenExpired() {
+  if (!tokenExpiryTime) return true;
+  return Date.now() >= tokenExpiryTime;
+}
 
+
+  function setAccessToken(token, expiresIn, user) {
+  accessToken = token;
+  currentUser = user || null;
+
+  // Store expiry timestamp (in ms)
+  tokenExpiryTime = Date.now() + (expiresIn * 1000);
+
+  scheduleTokenRefresh();
+
+  window.dispatchEvent(
+    new CustomEvent("xaytheon:authchange", { detail: { user: currentUser } })
+  );
+}
+
+    window.dispatchEvent(
+      new CustomEvent("xaytheon:authchange", {
+        detail: { user: currentUser },
+      })
+    );
   function getSession() {
     return {
       user: currentUser,
@@ -47,17 +84,45 @@ window.XAYTHEON_AUTH = window.XAYTHEON_AUTH || {};
     accessToken = null;
     currentUser = null;
     tokenExpiryTime = null;
+    localStorage.removeItem("x_refresh_token");
+
+    if (refreshTimer) {
+      clearTimeout(refreshTimer);
+      refreshTimer = null;
+    }
+
+    window.dispatchEvent(
+      new CustomEvent("xaytheon:authchange", {
+        detail: { user: null },
+      })
+    );
+  }
+
+  function isTokenExpiringSoon() {
+    return !tokenExpiryTime || Date.now() >= tokenExpiryTime;
+  }
+
+  async function refreshAccessToken() {
+    try {
+      const refreshToken = localStorage.getItem("x_refresh_token");
+      if (!refreshToken) throw { code: "SESSION_EXPIRED" };
     if (refreshTimer) clearTimeout(refreshTimer);
     localStorage.removeItem("x_refresh_token");
     window.dispatchEvent(new CustomEvent('xaytheon:authchange', { detail: { user: null } }));
   }
 
+  function getAccessToken() {
+    return accessToken;
+  }
   async function refreshAccessToken() {
     try {
       const storedRefreshToken = localStorage.getItem("x_refresh_token");
 
-      const options = {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/refresh`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+      });
         headers: { "Content-Type": "application/json" }
       };
 
@@ -69,10 +134,7 @@ window.XAYTHEON_AUTH = window.XAYTHEON_AUTH || {};
 
       const res = await fetchWithTimeout(`${API_BASE_URL}/refresh`, options);
 
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.message || "Token refresh failed");
-      }
+      if (!res.ok) throw { code: "SESSION_EXPIRED" };
 
       const data = await res.json();
       setAccessToken(data.accessToken, data.expiresIn, data.user);
@@ -82,98 +144,59 @@ window.XAYTHEON_AUTH = window.XAYTHEON_AUTH || {};
       }
 
       return true;
+    } catch {
+      clearAccessToken();
     } catch (err) {
-      console.warn("Session restore failed:", err);
-      lastAuthError = err.message; // Capture error for UI
+  console.warn("Session restore failed:", err);
 
-      if (!err.message.includes("Network")) {
-        if (err.message.includes("Invalid") || err.message.includes("expired") || err.message.includes("not found")) {
-          // Only clear if explicitly invalid, but keep error for display
-          accessToken = null;
-          currentUser = null;
-          localStorage.removeItem("x_refresh_token");
-        }
-      }
-      renderAuthArea(); // Update UI to show error
-      return false;
-    }
-  }
+  // Clear all auth data (logout user safely)
+  clearAccessToken();
+
+  // Notify UI that user is logged out
+ /* window.dispatchEvent(
+    new CustomEvent("xaytheon:authchange", { detail: { user: null } })
+  );*/
+
+  return false;
+}
+
 
   function scheduleTokenRefresh() {
     if (refreshTimer) clearTimeout(refreshTimer);
-
     if (!tokenExpiryTime) return;
 
-    const timeUntilRefresh = tokenExpiryTime - Date.now();
-    if (timeUntilRefresh > 0) {
-      refreshTimer = setTimeout(() => {
-        refreshAccessToken();
-      }, timeUntilRefresh);
-    }
+    refreshTimer = setTimeout(refreshAccessToken, tokenExpiryTime - Date.now());
   }
 
   async function authenticatedFetch(url, options = {}) {
-    if (isTokenExpiringSoon()) {
-      const refreshed = await refreshAccessToken();
-      if (!refreshed) {
-        throw new Error("Authentication required");
-      }
+     if (isTokenExpired()) {
+    const refreshed = await refreshAccessToken();
+    if (!refreshed) {
+      clearAccessToken();
+      throw { code: "SESSION_EXPIRED" };
     }
-
-    const token = getAccessToken();
-    if (!token) {
-      throw new Error("No access token available");
-    }
-
-    const headers = {
-      ...options.headers,
-      "Authorization": `Bearer ${token}`,
-    };
-
-    const response = await fetchWithTimeout(url, {
-      ...options,
-      headers,
-      credentials: "include",
-    });
-
-    if (response.status === 401) {
-      const data = await response.json();
-      if (data.expired) {
-        const refreshed = await refreshAccessToken();
-        if (refreshed) {
-          // Retry request with new token
-          headers.Authorization = `Bearer ${getAccessToken()}`;
-          return fetch(url, { ...options, headers, credentials: "include" });
-        }
-      }
-    }
-
-    return response;
   }
 
-  function isAuthenticated() {
-    return accessToken !== null;
+
+    const res = await fetchWithTimeout(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (res.status === 401) throw { code: "UNAUTHORIZED" };
+    return res;
   }
 
   async function login(email, password) {
-    // Input validation
-    if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
-      throw new Error('Email and password are required');
-    }
-
-    if (email.length > 254 || password.length > 128) {
-      throw new Error('Input data too long');
-    }
-
-    if (email.length < 3 || password.length < 8) {
-      throw new Error('Input data too short');
-    }
+    if (!email || !password) throw { code: "INVALID_INPUT" };
 
     try {
       const res = await fetchWithTimeout(`${API_BASE_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ email: email.trim(), password }),
       });
 
@@ -188,57 +211,27 @@ window.XAYTHEON_AUTH = window.XAYTHEON_AUTH || {};
         }
 
         // Handle specific HTTP status codes
-        if (res.status === 429) {
-          throw new Error('Too many login attempts. Please wait before trying again.');
-        } else if (res.status === 401) {
-          throw new Error('Invalid email or password');
-        } else if (res.status >= 500) {
-          throw new Error('Server error. Please try again later.');
-        }
+        
 
         throw new Error(errorMessage);
       }
 
       const data = await res.json();
-
-      // Validate response data
-      if (!data.accessToken || !data.user) {
-        throw new Error('Invalid response from server');
-      }
-
       setAccessToken(data.accessToken, data.expiresIn, data.user);
 
       if (data.refreshToken) {
         localStorage.setItem("x_refresh_token", data.refreshToken);
       }
-
-      renderAuthArea();
-      applyAuthGating();
     } catch (err) {
-      if (err.message.includes('timeout')) {
-        throw new Error('Request timeout. Please check your connection.');
+      if (err.message?.includes("Failed to fetch")) {
+        throw { code: "NETWORK_ERROR" };
       }
-      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-        throw new Error('Network error. Please check your connection.');
-      }
-      // Re-throw the original error if it's already user-friendly
       throw err;
     }
   }
 
   async function register(email, password) {
-    // Input validation
-    if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
-      throw new Error('Email and password are required');
-    }
-
-    if (email.length > 254 || password.length > 128) {
-      throw new Error('Input data too long');
-    }
-
-    if (email.length < 3 || password.length < 8) {
-      throw new Error('Input data too short');
-    }
+    if (!email || !password) throw { code: "INVALID_INPUT" };
 
     try {
       const res = await fetchWithTimeout(`${API_BASE_URL}/register`, {
@@ -248,58 +241,67 @@ window.XAYTHEON_AUTH = window.XAYTHEON_AUTH || {};
       });
 
       if (!res.ok) {
-        let errorMessage = "Registration failed";
-        try {
-          const err = await res.json();
-          errorMessage = err.message || errorMessage;
-        } catch {
-          // If we can't parse the error response, use status text
-          errorMessage = res.statusText || errorMessage;
-        }
-
-        // Handle specific HTTP status codes
-        if (res.status === 409) {
-          throw new Error('An account with this email already exists');
-        } else if (res.status === 429) {
-          throw new Error('Too many registration attempts. Please wait before trying again.');
-        } else if (res.status >= 500) {
-          throw new Error('Server error. Please try again later.');
-        }
-
-        throw new Error(errorMessage);
+        if (res.status === 409) throw { code: "USER_EXISTS" };
+        if (res.status === 429) throw { code: "TOO_MANY_ATTEMPTS" };
+        if (res.status >= 500) throw { code: "SERVER_ERROR" };
+        throw { code: "AUTH_FAILED" };
       }
 
-      const data = await res.json();
-      return data;
+      return await res.json();
     } catch (err) {
-      if (err.message.includes('timeout')) {
-        throw new Error('Request timeout. Please check your connection.');
+      if (err.message?.includes("Failed to fetch")) {
+        throw { code: "NETWORK_ERROR" };
       }
-      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-        throw new Error('Network error. Please check your connection.');
-      }
-      // Re-throw the original error if it's already user-friendly
       throw err;
     }
   }
 
   async function logout() {
     try {
-      await fetchWithTimeout(`${API_BASE_URL}/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } catch (err) {
-      console.error("Logout error:", err);
-    }
-
+      await fetchWithTimeout(`${API_BASE_URL}/logout`, { method: "POST" });
+    } catch {}
     clearAccessToken();
-    renderAuthArea();
-    applyAuthGating();
-    // Force reload to clear any private state
     window.location.reload();
   }
 
+ window.XAYTHEON_AUTH = {
+  login,
+  register,
+  logout,
+  authenticatedFetch,
+  isAuthenticated: () => !!accessToken,
+};
+
+/* =========================
+   CENTRALIZED ERROR HANDLER
+   ========================= */
+
+function getAuthErrorMessage(error) {
+  if (!error) return "Something went wrong. Please try again.";
+
+  switch (error.code) {
+    case "INVALID_CREDENTIALS":
+      return "Invalid email or password.";
+    case "USER_EXISTS":
+      return "An account with this email already exists.";
+    case "INVALID_INPUT":
+      return "Please enter valid email and password.";
+    case "NETWORK_ERROR":
+      return "Network error. Please check your connection.";
+    case "SESSION_EXPIRED":
+      return "Your session has expired. Please login again.";
+    case "UNAUTHORIZED":
+      return "You are not authorized. Please login.";
+    case "TOO_MANY_ATTEMPTS":
+      return "Too many attempts. Please wait and try again.";
+    case "SERVER_ERROR":
+      return "Server error. Please try again later.";
+    case "TIMEOUT":
+      return "Request timed out. Please try again.";
+    default:
+      return "Authentication failed. Please try again.";
+  }
+}
   async function restoreSession() {
     // If we have a stored refresh token, try to use it
     if (localStorage.getItem("x_refresh_token")) {
@@ -469,3 +471,29 @@ window.XAYTHEON_AUTH = window.XAYTHEON_AUTH || {};
   };
 
 })();
+
+function getAuthErrorMessage(error) {
+  if (!error) {
+    return "Something went wrong. Please try again.";
+  }
+
+  // Network error
+  if (error.message === "Failed to fetch") {
+    return "Network error. Please check your internet connection.";
+  }
+
+  // Custom error codes
+  switch (error.code) {
+    case "INVALID_CREDENTIALS":
+      return "Invalid email or password.";
+    case "USER_EXISTS":
+      return "User already exists. Please log in.";
+    case "UNAUTHORIZED":
+      return "You are not authorized. Please login again.";
+    case "SESSION_EXPIRED":
+      return "Your session has expired. Please login again.";
+    default:
+      return error.message || "Authentication failed.";
+  }
+}
+
