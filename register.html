@@ -6,6 +6,7 @@
   <title>Register – XAYTHEON</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="style.css" />
+  <script src="theme.js"></script>
 
   <style>
     body {
@@ -216,20 +217,7 @@
 
   <script src="auth.js"></script>
   <script>
-    // Theme toggle functionality
-    const themeToggle = document.getElementById('theme-toggle-auth');
-    const htmlElement = document.documentElement;
-    
-    // Load saved theme or default to light
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    htmlElement.setAttribute('data-theme', savedTheme);
-    
-    themeToggle.addEventListener('click', () => {
-      const currentTheme = htmlElement.getAttribute('data-theme');
-      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-      htmlElement.setAttribute('data-theme', newTheme);
-      localStorage.setItem('theme', newTheme);
-    });
+   
 
     // Register form handling
     const form = document.getElementById("register-form");

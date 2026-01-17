@@ -7,6 +7,7 @@
   <title>Sign in - XAYTHEON</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="style.css" />
+  <script src="theme.js"></script>
   <script defer src="i18n.js"></script>
 
   <style>
@@ -325,21 +326,7 @@
 
   <script src="auth.js"></script>
   <script>
-    // Theme toggle functionality
-    const themeToggle = document.getElementById('theme-toggle-auth');
-    const htmlElement = document.documentElement;
-
-    // Load saved theme or default to light
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    htmlElement.setAttribute('data-theme', savedTheme);
-
-    themeToggle.addEventListener('click', () => {
-      const currentTheme = htmlElement.getAttribute('data-theme');
-      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-      htmlElement.setAttribute('data-theme', newTheme);
-      localStorage.setItem('theme', newTheme);
-    });
-
+   
     // Login form handling
     const form = document.getElementById("login-form");
     const emailEl = document.getElementById("login-email");

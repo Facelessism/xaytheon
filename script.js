@@ -695,7 +695,7 @@ function addInteractiveEffects() {
 // Initialize when page loads
 document.addEventListener("DOMContentLoaded", () => {
   // Initialize theme first before anything else
-  initTheme();
+  // initTheme();
 
   // If the 3D canvas exists, we're on the home page; otherwise, dashboard-only page.
   const hasThree = !!document.getElementById("three-canvas");
@@ -712,103 +712,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setTimeout(initRecommendations, 1500);
 });
 
-// ===================== DARK MODE / THEME MANAGEMENT =====================
-function initTheme() {
-  const savedTheme = localStorage.getItem("xaytheon:theme");
 
-  if (savedTheme) {
-    setTheme(savedTheme);
-  } else {
-    if (
-      window.matchMedia &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches
-    ) {
-      setTheme("dark");
-    } else {
-      setTheme("light");
-    }
-  }
-
-  if (window.matchMedia) {
-    window
-      .matchMedia("(prefers-color-scheme: dark)")
-      .addEventListener("change", (e) => {
-        if (!localStorage.getItem("xaytheon:theme")) {
-          setTheme(e.matches ? "dark" : "light");
-        }
-      });
-  }
-
-  const toggleBtn = document.getElementById("theme-toggle");
-  if (toggleBtn) {
-    toggleBtn.addEventListener("click", toggleTheme);
-  }
-}
-
-function toggleTheme() {
-  const currentTheme =
-    document.documentElement.getAttribute("data-theme") || "light";
-  const newTheme = currentTheme === "light" ? "dark" : "light";
-  setTheme(newTheme);
-  saveTheme(newTheme);
-}
-
-function setTheme(theme) {
-  document.documentElement.setAttribute("data-theme", theme);
-
-  const themeIcon = document.querySelector(".theme-icon");
-  if (themeIcon) {
-    // Set common SVG attributes
-    themeIcon.setAttribute("fill", "none");
-    themeIcon.setAttribute("stroke", "currentColor");
-    themeIcon.setAttribute("stroke-width", "2");
-    themeIcon.setAttribute("stroke-linecap", "round");
-    themeIcon.setAttribute("stroke-linejoin", "round");
-
-    if (theme === "dark") {
-      // Moon icon
-      themeIcon.innerHTML = `
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-            `;
-    } else {
-      // Sun icon
-      themeIcon.innerHTML = `
-                <circle cx="12" cy="12" r="5"/>
-                <line x1="12" y1="1" x2="12" y2="3"/>
-                <line x1="12" y1="21" x2="12" y2="23"/>
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                <line x1="1" y1="12" x2="3" y2="12"/>
-                <line x1="21" y1="12" x2="23" y2="12"/>
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-            `;
-    }
-  }
-  updateCanvasForTheme(theme);
-}
-
-/**
- * Save theme preference to localStorage
- * @param {string} theme - 'light' or 'dark'
- * 
- */
-function saveTheme(theme) {
-  try {
-    localStorage.setItem("xaytheon:theme", theme);
-  } catch (e) {
-    console.warn("Could not save theme:", e);
-  }
-}
-
-/**
- * Update 3D canvas opacity based on theme
- * @param {string} theme - 'light' or 'dark'
- */
-function updateCanvasForTheme(theme) {
-  const canvas = document.getElementById("three-canvas");
-  if (!canvas) return;
-}
 
 // -----------------------------
 // Developer console instructions
