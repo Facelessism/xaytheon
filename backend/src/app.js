@@ -20,6 +20,7 @@ const sentimentRoutes = require("./routes/sentiment.routes");
 const workflowRoutes = require("./routes/workflow.routes");
 const dependencyRoutes = require("./routes/dependency.routes");
 const aiRoutes = require("./routes/ai.routes");
+const riskRoutes = require("./routes/risk.routes");
 
 const app = express();
 
@@ -122,9 +123,19 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
-
-/* ========================
-   ERROR HANDLING
+app.use("/api/watchlists", watchlistRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/achievements", achievementsRoutes);
+app.use("/api/push", pushRoutes);
+app.use("/api/compare", compareRoutes);
+app.use("/api/collab", collabRoutes);
+app.use("/api/heatmap", heatmapRoutes);
+app.use("/api/sentiment", sentimentRoutes);
+app.use("/api/workflow", workflowRoutes);
+app.use("/api/dependency", dependencyRoutes);
+app.use("/api/ai", aiRoutes);
+app.use("/api/risk", riskRoutes);
 
 app.use((err, req, res, next) => {
   console.error("Error:", err);
