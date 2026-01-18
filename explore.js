@@ -13,7 +13,7 @@
   // Debounce helper
   function debounce(func, delay) {
     let timeoutId;
-    return function(...args) {
+    return function (...args) {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => func.apply(this, args), delay);
     };
@@ -23,12 +23,12 @@
   const API_TRACKER = {
     lastCall: 0,
     minInterval: 2000, // 2 seconds between calls to respect rate limits
-    
+
     canCall() {
       const now = Date.now();
       return (now - this.lastCall) >= this.minInterval;
     },
-    
+
     recordCall() {
       this.lastCall = Date.now();
     }
@@ -79,7 +79,7 @@
   function saveCache(key, value) {
     const entry = { at: Date.now(), items: value, expiresAt: Date.now() + TTL_MS };
     memoryCache.set(key, entry);
-    try { localStorage.setItem('xaytheon:explore:' + key, JSON.stringify(entry)); } catch {}
+    try { localStorage.setItem('xaytheon:explore:' + key, JSON.stringify(entry)); } catch { }
     updateCacheInfo(key, entry);
   }
 
@@ -102,7 +102,7 @@
         // Remove expired entry
         localStorage.removeItem('xaytheon:explore:' + key);
       }
-    } catch {}
+    } catch { }
     return null;
   }
 
@@ -113,7 +113,7 @@
       const minutesOld = Math.floor(age / 60000);
       const timeLeft = Math.max(0, Math.floor((entry.expiresAt - Date.now()) / 60000));
       cacheInfoEl.innerHTML = `Cached ${minutesOld} min ago, expires in ${timeLeft} min <button id="clear-explore-cache" class="btn btn-sm" style="margin-left: 10px;">Clear Cache</button>`;
-      
+
       // Add event listener for clear cache button
       setTimeout(() => {
         const clearBtn = document.getElementById('clear-explore-cache');
@@ -137,7 +137,7 @@
           localStorage.removeItem(key);
         }
       }
-    } catch {}
+    } catch { }
   }
 
   function setStatus(msg, level = "info") {
@@ -167,19 +167,19 @@
         Accept: "application/vnd.github+json"
       }
     });
-    
+
     // Check for rate limiting
     if (res.status === 403 || res.status === 429) {
       const resetTime = res.headers.get('X-RateLimit-Reset');
       const remaining = res.headers.get('X-RateLimit-Remaining');
-      
+
       if (remaining === '0' || res.status === 429) {
         const resetDate = resetTime ? new Date(parseInt(resetTime) * 1000) : null;
         const waitTime = resetDate ? Math.ceil((resetDate - Date.now()) / 60000) : 'unknown';
         throw new Error(`⚠️ GitHub API rate limit exceeded. Please try again in ${waitTime} minutes.`);
       }
     }
-    
+
     if (!res.ok) {
       const text = await res.text();
       throw new Error(`GitHub API ${res.status}: ${text}`);
@@ -189,14 +189,14 @@
 
   async function searchReposByTopic(topic, language, limit) {
     const cacheKey = JSON.stringify({ topic, language, limit });
-    
+
     // Check cache first
     const cached = loadCache(cacheKey);
     if (cached) {
       exploreData.repos.push(...cached);
       return cached;
     }
-    
+
     const parts = [`topic:${topic}`];
     if (language) parts.push(`language:${language}`);
 
@@ -205,10 +205,10 @@
 
     const data = await ghJson(url);
     exploreData.repos.push(...data.items);
-    
+
     // Cache the results
     saveCache(cacheKey, data.items);
-    
+
     return data.items;
   }
 
@@ -233,6 +233,7 @@
           <a href="${repo.html_url}" target="_blank" rel="noopener" onclick='window.trackRepoView && window.trackRepoView(${safeRepo})'>
             ${repo.full_name}
           </a>
+          <a href="health.html?repo=${repo.full_name}" style="margin-left:8px; text-decoration:none;" title="Check Sustainability">🩺</a>
         </td>
         <td>${repo.topics?.[0] || "—"}</td>
         <td>${repo.language || "—"}</td>
@@ -305,9 +306,9 @@
       setStatus('Please wait a moment before expanding another topic.', 'error');
       return;
     }
-    
+
     API_TRACKER.recordCall();
-    
+
     try {
       setStatus(`Expanding ${d.label}…`);
       const repos = await searchReposByTopic(d.label, langEl.value.trim(), 30);
@@ -324,7 +325,7 @@
     } catch (e) {
       console.error(e);
       setStatus(e.message || "Failed to expand topic", "error");
-      
+
       // Add retry functionality
       const retryBtn = document.createElement('button');
       retryBtn.className = 'btn btn-sm';
@@ -333,7 +334,7 @@
       retryBtn.onclick = () => {
         onNodeClick(event, d);
       };
-      
+
       const statusContainer = statusEl;
       statusContainer.appendChild(retryBtn);
     }
@@ -363,12 +364,18 @@
     }
 
     // Validate limit
-    const limitNum = Number(limitValue);
-    if (isNaN(limitNum) || limitNum < 10 || limitNum > 100) {
-      setStatus("Limit must be a number between 10 and 100.", "error");
-      return;
-    }
+    if (!/^\d+$/.test(limitValue)) {
+  setStatus("Limit must be a whole number between 10 and 100.", "error");
+  return;
+}
 
+const limitNum = Number(limitValue);
+
+// 2️⃣ Range check
+if (limitNum < 10 || limitNum > 100) {
+  setStatus("Limit must be between 10 and 100.", "error");
+  return;
+}
     const limit = Math.min(100, Math.max(10, limitNum));
 
     addNode(`topic:${base}`, { type: "topic", label: base });
@@ -379,7 +386,7 @@
       submitBtn.disabled = true;
       submitBtn.textContent = 'Loading...';
     }
-    
+
     // Disable all form inputs
     const inputs = form.querySelectorAll('input, select, button');
     inputs.forEach(input => {
@@ -392,9 +399,9 @@
         setStatus('Please wait a moment before making another request.', 'error');
         return;
       }
-      
+
       API_TRACKER.recordCall();
-      
+
       if (window.trackSearchInterest) {
         window.trackSearchInterest(base, lang);
       }
@@ -413,7 +420,7 @@
     } catch (e) {
       console.error(e);
       setStatus(e.message || "Failed to load data", "error");
-      
+
       // Add retry functionality
       const retryBtn = document.createElement('button');
       retryBtn.className = 'btn btn-sm';
@@ -422,7 +429,7 @@
       retryBtn.onclick = () => {
         explore();
       };
-      
+
       const statusContainer = statusEl;
       statusContainer.appendChild(retryBtn);
     } finally {
@@ -452,7 +459,7 @@
   // Replace the node click handler with debounced version
   // Find the node selection code and replace the click handler
   // We need to update the renderGraph function to use the debounced click handler
-  
+
   // Initial load with defaults
   debouncedExplore();
 })();

@@ -28,7 +28,7 @@ const shapes = {
 
 // Initialize the 3D scene
 function init() {
-   if (_isInitialized) {
+  if (_isInitialized) {
     console.warn("init() already called; skipping reinitialization.");
     return;
   }
@@ -47,17 +47,17 @@ function init() {
     console.error("Three.js is not loaded; cannot initialize 3D scene.");
     return;
   }
-  _isInitialized = true;    
+  _isInitialized = true;
   // Create scene
   scene = new THREE.Scene();
-   // Keep scene background transparent so the site stays white
-   // renderer will composite over the white page background
-   
-   // Create camera
-   const aspectRatio = container.clientWidth / container.clientHeight;
-   camera = new THREE.PerspectiveCamera(75, aspectRatio, 0.1, 1000);
-   camera.position.set(5, 5, 5);
-   
+  // Keep scene background transparent so the site stays white
+  // renderer will composite over the white page background
+
+  // Create camera
+  const aspectRatio = container.clientWidth / container.clientHeight;
+  camera = new THREE.PerspectiveCamera(75, aspectRatio, 0.1, 1000);
+  camera.position.set(5, 5, 5);
+
   // Create renderer
   renderer = new THREE.WebGLRenderer({
     canvas,
@@ -74,34 +74,34 @@ function init() {
   setupLighting();
   // Setup controls
   setupControls();
-    
+
   // Load model: allow page to specify a different model via data-model
   const modelPath = canvas && canvas.dataset.model ? canvas.dataset.model : 'assets/models/prism.glb';
   loadGltfFromUrl(modelPath, undefined, () => {
-  console.warn('Falling back to primitive shape because prism.glb failed to load.');
-  safeCreatePrimitiveFallback();
+    console.warn('Falling back to primitive shape because prism.glb failed to load.');
+    safeCreatePrimitiveFallback();
   });
-    
+
   // Setup event listeners & interactive effects
-  setupEventListeners();    
+  setupEventListeners();
   addInteractiveEffects();
   // Hide loading screen
   // and announce completion
   setTimeout(() => {
-      const loader = document.getElementById("loading-screen");
-      if (loader) loader.classList.add("hidden");
+    const loader = document.getElementById("loading-screen");
+    if (loader) loader.classList.add("hidden");
 
-      // Screen reader announcement
-     const doneMsg = document.createElement("div");
-     doneMsg.setAttribute("role", "status");
-     doneMsg.setAttribute("aria-live", "polite");
-     doneMsg.classList.add("sr-only");
-     doneMsg.textContent = "XAYTHEON has finished loading.";
-     document.body.appendChild(doneMsg);
-   }, 1000);
-    
-   // Start animation loop
-   startAnimation();
+    // Screen reader announcement
+    const doneMsg = document.createElement("div");
+    doneMsg.setAttribute("role", "status");
+    doneMsg.setAttribute("aria-live", "polite");
+    doneMsg.classList.add("sr-only");
+    doneMsg.textContent = "XAYTHEON has finished loading.";
+    document.body.appendChild(doneMsg);
+  }, 1000);
+
+  // Start animation loop
+  startAnimation();
 }
 
 function disposeScene() {
@@ -142,15 +142,15 @@ function disposeScene() {
     currentModel = null;
   }
 
-if (scene) {
-  const lightsToRemove = [];
-  scene.traverse(obj => {
-    if (obj.isLight) {
-      lightsToRemove.push(obj);
-    }
-  });
-  lightsToRemove.forEach(light => scene.remove(light));
-}
+  if (scene) {
+    const lightsToRemove = [];
+    scene.traverse(obj => {
+      if (obj.isLight) {
+        lightsToRemove.push(obj);
+      }
+    });
+    lightsToRemove.forEach(light => scene.remove(light));
+  }
 
   // Dispose renderer
   try {
@@ -167,13 +167,13 @@ if (scene) {
   }
 
   if (window.__interactiveCleanup) {
-  window.__interactiveCleanup();
-  window.__interactiveCleanup = null;
-}
+    window.__interactiveCleanup();
+    window.__interactiveCleanup = null;
+  }
   // Clear controls
-if (controls && typeof controls.dispose === "function") {
-  controls.dispose();
-}
+  if (controls && typeof controls.dispose === "function") {
+    controls.dispose();
+  }
   controls = null;
   scene = null;
   camera = null;
@@ -243,7 +243,7 @@ function createShape(shapeType) {
     try {
       scene.remove(currentModel);
       disposeObject(currentModel);
-    } catch (e) {}
+    } catch (e) { }
     currentModel = null;
   }
 
@@ -282,7 +282,7 @@ function createShape(shapeType) {
 
 // Setup event listeners
 function setupEventListeners() {
-    if (_listenersAttached) return;
+  if (_listenersAttached) return;
   _listenersAttached = true;
 
   // UI controls: guard each element's existence
@@ -404,7 +404,7 @@ function handleModelUpload(event) {
 
 function loadGltfFromUrl(url, onDone, onError) {
   showLoading(true, "Loading Model...");
-   if (typeof THREE === "undefined" || !THREE.GLTFLoader) {
+  if (typeof THREE === "undefined" || !THREE.GLTFLoader) {
     const err = new Error("GLTFLoader unavailable");
     console.warn(err);
     showLoading(false);
@@ -646,7 +646,7 @@ function addInteractiveEffects() {
             canvas.style.cursor = "default";
             lastCursorState = "default";
           }
-        } catch (e) {}
+        } catch (e) { }
       }
     }
   };
@@ -685,7 +685,7 @@ function addInteractiveEffects() {
       canvas.removeEventListener("click", onDomClick);
       window.removeEventListener("mousemove", onWindowMouseMove);
       window.removeEventListener("scroll", setOpacityByScroll);
-    } catch (e) {}
+    } catch (e) { }
     delete window.__processRaycast;
     delete window.__interactiveCleanup;
     _interactiveAttached = false;
@@ -695,7 +695,7 @@ function addInteractiveEffects() {
 // Initialize when page loads
 document.addEventListener("DOMContentLoaded", () => {
   // Initialize theme first before anything else
-  initTheme();
+  // initTheme();
 
   // If the 3D canvas exists, we're on the home page; otherwise, dashboard-only page.
   const hasThree = !!document.getElementById("three-canvas");
@@ -710,12 +710,25 @@ document.addEventListener("DOMContentLoaded", () => {
   initMiniViewer();
   // Delay recommendations to allow auth setup
   setTimeout(initRecommendations, 1500);
+
+  // Listen for auth changes to apply preferences
+  window.addEventListener("xaytheon:authchange", async (e) => {
+    const user = e.detail.user;
+    if (user) {
+      // User logged in, fetch prefs
+      const prefs = await window.XAYTHEON_AUTH.fetchPreferences();
+      if (prefs && prefs.theme) {
+        setTheme(prefs.theme);
+        localStorage.setItem("xaytheon:theme", prefs.theme);
+      }
+    }
+  });
 });
+
 
 // ===================== DARK MODE / THEME MANAGEMENT =====================
 function initTheme() {
   const savedTheme = localStorage.getItem("xaytheon:theme");
-
   if (savedTheme) {
     setTheme(savedTheme);
   } else {
@@ -796,6 +809,11 @@ function setTheme(theme) {
 function saveTheme(theme) {
   try {
     localStorage.setItem("xaytheon:theme", theme);
+
+    // Sync with backend if logged in
+    if (window.XAYTHEON_AUTH && window.XAYTHEON_AUTH.isAuthenticated()) {
+      window.XAYTHEON_AUTH.savePreferences({ theme });
+    }
   } catch (e) {
     console.warn("Could not save theme:", e);
   }
@@ -853,7 +871,7 @@ const HISTORY_MANAGER = {
     };
 
     history.unshift(snapshot);
-    
+
     if (history.length > this.maxSnapshots) {
       history.splice(this.maxSnapshots);
     }
@@ -898,16 +916,16 @@ const GITHUB_CACHE = {
     );
   },
 
-  get(key) {
+  get(key, ignoreExpiration = false) {
     const raw = localStorage.getItem(this.prefix + key);
     if (!raw) return null;
 
     const entry = JSON.parse(raw);
-    if (Date.now() - entry.timestamp > this.TTL) {
-      localStorage.removeItem(this.prefix + key);
-      return null;
+    if (!ignoreExpiration && Date.now() - entry.timestamp > this.TTL) {
+      // Mark as expired but return date so caller can decide
+      return { data: entry.data, expired: true, timestamp: entry.timestamp };
     }
-    return entry.data;
+    return { data: entry.data, expired: false, timestamp: entry.timestamp };
   },
 
   clear() {
@@ -948,25 +966,30 @@ function setDashboardState(state, message = "") {
 function clearDashboardUI() {
   const avatar = document.getElementById("gh-avatar");
   if (avatar) avatar.src = "";
-  
+
   ["gh-name", "gh-login", "gh-bio"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = "";
   });
-  
+
   ["gh-followers", "gh-following", "gh-repos-count"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = "0";
   });
-  
+
   const repoList = document.getElementById("gh-repo-list");
   if (repoList) repoList.innerHTML = '<div class="muted">Load a dashboard to see repositories</div>';
-  
+
   const activityList = document.getElementById("gh-activity-list");
   if (activityList) activityList.innerHTML = '<li class="activity-item muted">Load a dashboard to see activity</li>';
-  
+
   const contribSvg = document.getElementById("gh-contrib-svg");
   if (contribSvg) contribSvg.innerHTML = '<div class="muted">Load a dashboard to see contributions</div>';
+
+  ["gh-pr-metrics", "gh-languages"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
 }
 
 // ---------------- INIT ----------------
@@ -1012,7 +1035,7 @@ function initGithubDashboard() {
     localStorage.removeItem("xaytheon:ghCreds");
     GITHUB_CACHE.clear();
     usernameInput.value = "";
-    
+
     // Clear the UI display but don't delete history data
     clearDashboardUI();
     setDashboardState("idle", "Cache cleared. History preserved.");
@@ -1024,7 +1047,7 @@ function initGithubDashboard() {
   // Clear History button - only clears snapshots, not cache
   document.getElementById("clear-history").addEventListener("click", () => {
     const username = usernameInput.value.trim();
-    
+
     if (!username) {
       // If no username in input, ask user to confirm clearing ALL history
       if (confirm("Clear history for ALL users? This cannot be undone.")) {
@@ -1053,10 +1076,10 @@ async function loadGithubDashboard(username) {
   setDashboardState("loading", "Loading GitHub dashboard…");
 
   const cacheKey = `dashboard:${username}`;
-  const cached = GITHUB_CACHE.get(cacheKey);
+  const cached = GITHUB_CACHE.get(cacheKey, true); // Get even if expired
 
-  if (cached) {
-    renderDashboardData(cached, username);
+  if (cached && !cached.expired) {
+    renderDashboardData(cached.data, username);
     setDashboardState(
       "success",
       "Loaded from cache • refreshing in background ♻️"
@@ -1105,14 +1128,23 @@ async function loadGithubDashboard(username) {
     updateHistoryVisualization(username);
     setDashboardState("success", "Dashboard loaded successfully ✅");
   } catch (e) {
-    setDashboardState(
-      "error",
-      e.message || "Failed to load GitHub data"
-    );
+    // If we have an expired cache, show it as fallback
+    if (cached && cached.expired) {
+      console.warn("API failed, falling back to expired cache", e);
+      renderDashboardData(cached.data, username);
+      setDashboardState("success", "API rate limited. Showing cached data (may be outdated). ⚠️");
+      // No need to throw here, we handled it gracefully
+    } else {
+      setDashboardState(
+        "error",
+        e.message || "Failed to load GitHub data"
+      );
+    }
   } finally {
     requestInFlight = false;
   }
 }
+
 
 async function fetchAndCacheDashboard(username) {
   try {
@@ -1127,7 +1159,7 @@ async function fetchAndCacheDashboard(username) {
 
     const data = { user, repos: topRepos, events: events.slice(0, 10) };
     GITHUB_CACHE.set(`dashboard:${username}`, data);
-    
+
     // Save metrics snapshot during background refresh
     const metrics = {
       followers: user.followers,
@@ -1136,7 +1168,7 @@ async function fetchAndCacheDashboard(username) {
       stars: topRepos.reduce((sum, r) => sum + r.stargazers_count, 0)
     };
     HISTORY_MANAGER.saveSnapshot(username, metrics);
-    
+
     // Update visualization if this is the current user
     const currentUsername = document.getElementById("gh-username")?.value.trim();
     if (currentUsername === username) {
@@ -1178,7 +1210,7 @@ function renderMetricsTrends(current, previous) {
     const currentVal = current[metric.key] || 0;
     const previousVal = previous ? (previous[metric.key] || 0) : currentVal;
     const change = currentVal - previousVal;
-    
+
     let trendClass = "neutral";
     let trendIcon = "—";
     let trendText = "No change";
@@ -1274,7 +1306,7 @@ function renderHistoryChart(history) {
       },
       scales: {
         x: {
-          ticks: { 
+          ticks: {
             color: 'rgba(255, 255, 255, 0.6)',
             maxRotation: 45,
             minRotation: 45,
@@ -1329,7 +1361,7 @@ function renderDashboardData(data, username) {
     if (el) el.textContent = val;
   };
   const avatar = document.getElementById("gh-avatar");
-  
+
   // Render user profile
   if (avatar) avatar.src = data.user.avatar_url;
   set("gh-name", data.user.name || "—");
@@ -1338,13 +1370,13 @@ function renderDashboardData(data, username) {
   set("gh-followers", data.user.followers ?? 0);
   set("gh-following", data.user.following ?? 0);
   set("gh-repos-count", (data.user.public_repos ?? data.repos.length) + "");
-  
+
   // Render repos
   renderRepos(data.repos);
-  
+
   // Render activity
   renderActivity(data.events);
-  
+
   // Render contributions chart
   const setDisplay = (id, disp) => {
     const el = document.getElementById(id);
@@ -1352,12 +1384,12 @@ function renderDashboardData(data, username) {
   };
   const contribNote = document.getElementById("gh-contrib-note");
   const container = document.getElementById("gh-contrib-svg");
-  
+
   if (contribNote)
     contribNote.textContent =
       "Full-year chart via third-party (ghchart.rshah.org). If it fails, we will show an approximate heatmap.";
   setDisplay("gh-contrib-note", "block");
-  
+
   if (container) {
     container.innerHTML = '<div class="muted">Loading public contributions…</div>';
     const img = new Image();
@@ -1387,6 +1419,102 @@ function renderDashboardData(data, username) {
 
   // Update history visualization
   updateHistoryVisualization(username);
+
+  // Render language stats
+  renderLanguageStats(data.repos);
+
+  // Render PR metrics
+  renderPrMetrics(data.events);
+}
+
+function renderLanguageStats(repos) {
+  const container = document.getElementById("gh-languages");
+  const list = document.getElementById("gh-language-list");
+
+  if (!container || !list) return;
+
+  if (!repos || repos.length === 0) {
+    container.style.display = "none";
+    return;
+  }
+
+  const counts = {};
+  let total = 0;
+
+  repos.forEach(repo => {
+    if (repo.language) {
+      counts[repo.language] = (counts[repo.language] || 0) + 1;
+      total++;
+    }
+  });
+
+  if (total === 0) {
+    container.style.display = "none";
+    return;
+  }
+
+  // Sort by count desc
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+  list.innerHTML = sorted.map(([lang, count]) => {
+    const pct = Math.round((count / total) * 100);
+    return `
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.9rem;">
+                <div style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                    <span style="min-width: 80px;">${lang}</span>
+                    <div style="flex-grow: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                        <div style="width: ${pct}%; height: 100%; background: #6366f1; border-radius: 3px;"></div>
+                    </div>
+                    <span style="font-size: 0.8rem; opacity: 0.7; min-width: 30px; text-align: right;">${pct}%</span>
+                </div>
+            </div>
+        `;
+  }).join('');
+
+  container.style.display = "block";
+}
+
+function renderPrMetrics(events) {
+  const container = document.getElementById("gh-pr-metrics");
+  const openedEl = document.getElementById("pr-opened");
+  const mergedEl = document.getElementById("pr-merged");
+  const closedEl = document.getElementById("pr-closed");
+
+  if (!container || !openedEl || !mergedEl || !closedEl) return;
+
+  let opened = 0;
+  let merged = 0;
+  let closed = 0;
+
+  if (events && events.length > 0) {
+    events.forEach(ev => {
+      if (ev.type === "PullRequestEvent") {
+        const action = ev.payload.action;
+        const pr = ev.payload.pull_request;
+
+        if (action === "opened") {
+          opened++;
+        } else if (action === "closed") {
+          if (pr && pr.merged) {
+            merged++;
+          } else {
+            closed++;
+          }
+        }
+      }
+    });
+  }
+
+  // Only show if there is some activity
+  if (opened === 0 && merged === 0 && closed === 0) {
+    container.style.display = "none";
+    return;
+  }
+
+  openedEl.textContent = opened;
+  mergedEl.textContent = merged;
+  closedEl.textContent = closed;
+  container.style.display = "block";
 }
 
 async function ghJson(url, headers = {}) {
@@ -1397,24 +1525,52 @@ async function ghJson(url, headers = {}) {
       ...headers,
     },
   });
-  
+
+  // Extract Rate Limit Headers
+  const limit = res.headers.get("X-RateLimit-Limit");
+  const remaining = res.headers.get("X-RateLimit-Remaining");
+
+  if (limit && remaining) {
+    updateRateLimitUI(remaining, limit);
+  }
+
   // Check for rate limiting
   if (res.status === 403 || res.status === 429) {
     const resetTime = res.headers.get('X-RateLimit-Reset');
-    const remaining = res.headers.get('X-RateLimit-Remaining');
-    
-    if (remaining === '0' || res.status === 429) {
+    const remainingVal = res.headers.get('X-RateLimit-Remaining');
+
+    if (remainingVal === '0' || res.status === 429) {
       const resetDate = resetTime ? new Date(parseInt(resetTime) * 1000) : null;
       const waitTime = resetDate ? Math.ceil((resetDate - Date.now()) / 60000) : 'unknown';
       throw new Error(`⚠️ GitHub API rate limit exceeded. Please try again in ${waitTime} minutes.`);
     }
   }
-  
+
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`GitHub API ${res.status}: ${text}`);
   }
   return res.json();
+}
+
+function updateRateLimitUI(remaining, limit) {
+  const badge = document.getElementById("gh-rate-limit-badge");
+  const remEl = document.getElementById("gh-rate-remaining");
+  const limEl = document.getElementById("gh-rate-limit");
+
+  if (badge && remEl && limEl) {
+    badge.style.display = "inline-block";
+    remEl.textContent = remaining;
+    limEl.textContent = limit;
+
+    if (parseInt(remaining) < 5) {
+      badge.style.background = "rgba(239, 68, 68, 0.15)";
+      badge.style.color = "#ef4444";
+    } else {
+      badge.style.background = "rgba(99, 102, 241, 0.1)";
+      badge.style.color = "#6366f1";
+    }
+  }
 }
 
 function renderRepos(repos) {
@@ -1441,6 +1597,7 @@ function renderRepos(repos) {
                 <span>⑂ ${r.forks_count || 0}</span>
                 ${r.language ? `<span>${r.language}</span>` : ""}
                 <span>Updated ${timeAgo(r.updated_at)}</span>
+                <span><a href="health.html?repo=${r.full_name}" style="text-decoration:none; color:inherit;" title="Check Sustainability">🩺 Health</a></span>
             </div>
         </div>
     `;

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI-powered PR review system that automatically analyzes pull requests and provides inline code suggestions, security warnings, and best practice recommendations">
+    <title>PR Review Assistant — XAYTHEON</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="analytics.css">
+    <link rel="stylesheet" href="features_analytics.css">
+    
+    <!-- Supabase SDK & auth bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.4/dist/umd/supabase.min.js"></script>
+    <script defer src="auth.js"></script>
+</head>
+<body class="eightgon-page">
+    <div class="page-wrapper">
+        <nav class="navbar">
+            <div class="nav-container">
+                <a class="logo" href="index.html" aria-label="Back to Home">
+                    <img class="logo-img" src="assets/logo/thelogo.png" alt="XAYTHEON logo" />
+                </a>
+                <ul class="nav-menu">
+                    <li><a class="nav-link" href="index.html#home">Home</a></li>
+                    <li><a class="nav-link" href="github.html">GitHub Dashboard</a></li>
+                    <li><a class="nav-link" href="analytics.html">Analytics</a></li>
+                    <li><a class="nav-link" href="fleet.html">Fleet Dashboard</a></li>
+                    <li><a class="nav-link active" href="pr-review.html">PR Review Assistant</a></li>
+                    <li><a class="nav-link" href="explore.html">Explore</a></li>
+                    <li><a class="nav-link" href="community.html">Community</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme">
+                        <span class="theme-icon">🌙</span>
+                    </button>
+                    <div id="auth-section">
+                        <a href="login.html" class="btn btn-secondary">Login</a>
+                        <a href="register.html" class="btn btn-primary">Sign Up</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="dashboard-main">
+            <div class="dashboard-container">
+                <!-- Header Section -->
+                <header class="dashboard-header">
+                    <div class="header-content">
+                        <h1 class="dashboard-title">
+                            <span class="title-icon">🤖</span>
+                            AI-Powered PR Review Assistant
+                        </h1>
+                        <p class="dashboard-description">
+                            Automated pull request analysis with security scanning, code quality checks, and best practice recommendations
+                        </p>
+                    </div>
+                </header>
+
+                <!-- Loading State -->
+                <div id="loading-state" class="loading-overlay hidden">
+                    <div class="loading-spinner"></div>
+                    <p>Analyzing your pull request...</p>
+                </div>
+
+                <!-- PR Input Section -->
+                <section class="pr-input-section">
+                    <div class="section-header">
+                        <h2>Submit Pull Request for Review</h2>
+                        <p>Enter PR details to get automated analysis and recommendations</p>
+                    </div>
+                    
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label for="repo-name">Repository Name</label>
+                            <input type="text" id="repo-name" placeholder="e.g., your-org/your-repo" class="form-input">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="pr-number">Pull Request Number</label>
+                            <input type="number" id="pr-number" placeholder="e.g., 123" class="form-input">
+                        </div>
+                        
+                        <div class="input-group full-width">
+                            <label for="pr-diff">Pull Request Diff</label>
+                            <textarea id="pr-diff" placeholder="Paste the full diff of your pull request here..." 
+                                     class="form-textarea" rows="20"></textarea>
+                            <small class="input-hint">Max 1MB of content</small>
+                        </div>
+                    </div>
+                    
+                    <div class="review-options">
+                        <div class="option-group">
+                            <label for="review-template">Review Template</label>
+                            <select id="review-template" class="form-select">
+                                <option value="comprehensive">Comprehensive Review</option>
+                                <option value="security-focused">Security Focused</option>
+                                <option value="performance-focused">Performance Focused</option>
+                                <option value="code-quality">Code Quality</option>
+                            </select>
+                        </div>
+                        
+                        <div class="option-group">
+                            <label for="confidence-threshold">Confidence Threshold</label>
+                            <select id="confidence-threshold" class="form-select">
+                                <option value="high">High (90%+)</option>
+                                <option value="medium" selected>Medium (70%+)</option>
+                                <option value="low">Low (50%+)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button id="analyze-pr" class="btn btn-primary btn-large">
+                            <span class="btn-icon">🔍</span>
+                            Analyze Pull Request
+                        </button>
+                        <button id="clear-form" class="btn btn-secondary">
+                            <span class="btn-icon">🗑️</span>
+                            Clear Form
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Results Section (Hidden initially) -->
+                <section id="review-results" class="review-results-section hidden">
+                    <!-- Review Summary Card -->
+                    <div class="review-summary-card">
+                        <div class="card-header">
+                            <h2>Review Summary</h2>
+                            <div class="review-stats">
+                                <div class="stat-item">
+                                    <span class="stat-label">Confidence Score</span>
+                                    <span id="confidence-score" class="stat-value">0%</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Total Issues</span>
+                                    <span id="total-issues" class="stat-value">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Severity Level</span>
+                                    <span id="severity-level" class="stat-value">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="issues-overview">
+                            <div class="issue-category">
+                                <span class="category-label high">High</span>
+                                <span id="high-issues" class="category-count">0</span>
+                            </div>
+                            <div class="issue-category">
+                                <span class="category-label medium">Medium</span>
+                                <span id="medium-issues" class="category-count">0</span>
+                            </div>
+                            <div class="issue-category">
+                                <span class="category-label low">Low</span>
+                                <span id="low-issues" class="category-count">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Issues Section -->
+                    <div class="issues-section">
+                        <h2>Detected Issues</h2>
+                        <div id="issues-container" class="issues-grid">
+                            <!-- Issues will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Security Warnings -->
+                    <div class="security-section">
+                        <h2>Security Warnings</h2>
+                        <div id="security-warnings" class="warnings-container">
+                            <!-- Security warnings will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Code Suggestions -->
+                    <div class="suggestions-section">
+                        <h2>Code Suggestions</h2>
+                        <div id="code-suggestions" class="suggestions-container">
+                            <!-- Code suggestions will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Recommendations -->
+                    <div class="recommendations-section">
+                        <h2>Recommendations</h2>
+                        <div id="recommendations" class="recommendations-container">
+                            <!-- Recommendations will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Generated Comment -->
+                    <div class="comment-section">
+                        <h2>Generated Review Comment</h2>
+                        <div class="comment-actions">
+                            <button id="generate-comment" class="btn btn-secondary">
+                                <span class="btn-icon">💬</span>
+                                Generate Comment
+                            </button>
+                            <button id="copy-comment" class="btn btn-outline" disabled>
+                                <span class="btn-icon">📋</span>
+                                Copy to Clipboard
+                            </button>
+                        </div>
+                        <div class="comment-preview">
+                            <pre id="review-comment" class="comment-content"></pre>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="pr-review.js"></script>
+</body>
+</html>
