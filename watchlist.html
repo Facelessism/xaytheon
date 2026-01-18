@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description"
+        content="Real-time collaborative watchlist for tracking GitHub repositories with live notifications and team collaboration." />
+    <title>Watchlist — XAYTHEON</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css" />
+     <script src="theme.js"></script>
+    <link rel="stylesheet" href="watchlist.css" />
+
+    <!-- Socket.io Client -->
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+
+    <!-- Supabase SDK & auth bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.4/dist/umd/supabase.min.js"></script>
+    <script defer src="auth.js"></script>
+    <script defer src="i18n.js"></script>
+</head>
+
+<body class="eightgon-page">
+    <div class="page-wrapper">
+
+        <nav class="navbar">
+            <div class="nav-container">
+                <a class="logo" href="index.html" aria-label="Back to Home">
+                    <img class="logo-img" src="assets/logo/thelogo.png" alt="XAYTHEON logo" />
+                </a>
+                <ul class="nav-menu">
+                    <li><a class="nav-link" href="index.html#home" data-i18n="nav.home">Home</a></li>
+                    <li><a class="nav-link" href="github.html" data-i18n="nav.dashboard">GitHub Dashboard</a></li>
+                    <li><a class="nav-link" href="analytics.html" data-i18n="nav.analytics">Analytics</a></li>
+                    <li><a class="nav-link" href="heatmap.html">Activity Map</a></li>
+                    <li><a class="nav-link" href="sentiment.html">Sentiment</a></li>
+                    <li><a class="nav-link" href="workflow-builder.html">Workflow Builder</a></li>
+                    <li><a class="nav-link" href="compare.html">Compare</a></li>
+                    <li><a class="nav-link" href="achievements.html">Achievements</a></li>
+                    <li><a class="nav-link" href="community.html" data-i18n="nav.community">Community Highlights</a>
+                    </li>
+                    <li><a class="nav-link" href="health.html">Health Auditor</a></li>
+                    <li><a class="nav-link" href="explore.html" data-i18n="nav.explore">Explore by Topic</a></li>
+                    <li><a class="nav-link" href="contributions.html" data-i18n="nav.contributions">Contributions</a>
+                    </li>
+                    <li>
+                        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+                            <svg class="theme-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="5" />
+                                <line x1="12" y1="1" x2="12" y2="3" />
+                                <line x1="12" y1="21" x2="12" y2="23" />
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                                <line x1="1" y1="12" x2="3" y2="12" />
+                                <line x1="21" y1="12" x2="23" y2="12" />
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                            </svg>
+                        </button>
+                    </li>
+                    <li>
+                        <button class="notification-bell" id="notification-bell">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                            </svg>
+                            <span class="notification-badge" id="notification-badge" style="display: none;">0</span>
+                        </button>
+                    </li>
+                    <li id="auth-area"></li>
+                </ul>
+            </div>
+        </nav>
+
+        <main>
+            <section id="watchlist" class="watchlist-section">
+                <div class="watchlist-container">
+
+                    <!-- Sidebar -->
+                    <aside class="watchlist-sidebar">
+                        <div class="sidebar-header">
+                            <h2 data-i18n="watchlist.title">📋 Watchlists</h2>
+                            <button class="btn btn-primary btn-sm" id="create-watchlist-btn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                New
+                            </button>
+                        </div>
+
+                        <div class="watchlist-list" id="watchlist-list">
+                            <!-- Watchlists will be populated here -->
+                        </div>
+                    </aside>
+
+                    <!-- Main Content -->
+                    <div class="watchlist-main">
+
+                        <!-- Auth Warning -->
+                        <div id="auth-warning" class="warning-card" style="display: none;">
+                            <div class="warning-icon">⚠️</div>
+                            <div>
+                                <h3>Authentication Required</h3>
+                                <p>Please <a href="login.html">sign in</a> to access your watchlists and track
+                                    repositories in real-time.</p>
+                            </div>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div id="empty-state" class="empty-state" style="display: none;">
+                            <div class="empty-state-icon">📋</div>
+                            <h3>No Watchlist Selected</h3>
+                            <p>Create a new watchlist or select one from the sidebar to get started.</p>
+                            <button class="btn btn-primary"
+                                onclick="document.getElementById('create-watchlist-btn').click()">
+                                Create Your First Watchlist
+                            </button>
+                        </div>
+
+                        <!-- Watchlist Content -->
+                        <div id="watchlist-content" style="display: none;">
+
+                            <!-- Header -->
+                            <div class="watchlist-header">
+                                <div>
+                                    <h1 id="watchlist-title" data-i18n="watchlist.title">My Watchlist</h1>
+                                    <p id="watchlist-description" class="text-muted" data-i18n="watchlist.subtitle"></p>
+                                </div>
+                                <div class="watchlist-actions">
+                                    <button class="btn btn-outline btn-sm" id="add-repo-btn"
+                                        data-i18n="watchlist.addRepo">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        </svg>
+                                        Add Repository
+                                    </button>
+                                    <button class="btn btn-outline btn-sm" id="manage-collaborators-btn">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="9" cy="7" r="4"></circle>
+                                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                        </svg>
+                                        Collaborators
+                                    </button>
+                                    <button class="btn btn-outline btn-sm" id="watchlist-settings-btn">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                            <path
+                                                d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m0 6l4.2 4.2M23 12h-6m-6 0H1m18.2 5.2l-4.2-4.2m0-6l4.2-4.2">
+                                            </path>
+                                        </svg>
+                                        Settings
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Presence Indicators -->
+                            <div class="presence-bar" id="presence-bar">
+                                <div class="presence-avatars" id="presence-avatars"></div>
+                                <span class="presence-text" id="presence-text">Only you</span>
+                                <div class="connection-status" id="connection-status">
+                                    <span class="status-dot"></span>
+                                    <span class="status-text">Connected</span>
+                                </div>
+                            </div>
+
+                            <!-- Repository Grid -->
+                            <div class="repo-grid" id="repo-grid">
+                                <!-- Repository cards will be populated here -->
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-brand">
+                        <span class="logo-text">XAYTHEON</span>
+                        <p data-i18n="footer.tagline">Empowering the next generation of innovators</p>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p data-i18n="footer.copyright">&copy; 2026 XAYTHEON. All rights reserved.</p>
+                </div>
+            </div>
+        </footer>
+
+        <div class="cursor-container">
+            <span class="cursor-dot"></span>
+            <span class="cursor-dot"></span>
+            <span class="cursor-dot"></span>
+            <span class="cursor-dot"></span>
+            <span class="cursor-dot"></span>
+            <span class="cursor-dot"></span>
+            <span class="cursor-dot"></span>
+            <span class="cursor-dot"></span>
+        </div>
+
+    </div>
+
+    <!-- Notification Panel -->
+    <div id="notification-panel" class="notification-panel" style="display: none;">
+        <div class="notification-header">
+            <h3>Notifications</h3>
+            <button class="btn-text" id="mark-all-read">Mark all as read</button>
+        </div>
+        <div class="notification-list" id="notification-list">
+            <!-- Notifications will be populated here -->
+        </div>
+    </div>
+
+    <!-- Create Watchlist Modal -->
+    <div id="create-watchlist-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create New Watchlist</h3>
+                <button class="modal-close" id="close-create-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="create-watchlist-form">
+                    <div class="form-group">
+                        <label for="watchlist-name">Name *</label>
+                        <input type="text" id="watchlist-name" required placeholder="e.g., My Favorite Repos" />
+                    </div>
+                    <div class="form-group">
+                        <label for="watchlist-desc">Description</label>
+                        <textarea id="watchlist-desc" rows="3" placeholder="What is this watchlist for?"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="watchlist-public" />
+                            Make this watchlist public
+                        </label>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline"
+                            onclick="document.getElementById('close-create-modal').click()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create Watchlist</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Repository Modal -->
+    <div id="add-repo-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Repository</h3>
+                <button class="modal-close" id="close-add-repo-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-repo-form">
+                    <div class="form-group">
+                        <label for="repo-name">Repository (owner/name) *</label>
+                        <input type="text" id="repo-name" required placeholder="e.g., facebook/react" />
+                        <small>Enter the full repository name (owner/repo)</small>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline"
+                            onclick="document.getElementById('close-add-repo-modal').click()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Repository</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Main app script -->
+    <script src="script.js"></script>
+    <!-- Watchlist-specific script -->
+    <script src="watchlist.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="Track your GitHub growth over time with advanced analytics, interactive charts, and historical data visualization." />
+  <title>Analytics Dashboard — XAYTHEON</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="analytics.css" />
+  <link rel="stylesheet" href="features_analytics.css" />
+  <link rel="stylesheet" href="modal-fix.css?v=1" />
+  <script src="theme.js"></script>
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Socket.io Client -->
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <!-- jsPDF & html2canvas for PDF Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <!-- Supabase SDK & auth bootstrap -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.4/dist/umd/supabase.min.js"></script>
+  <script defer src="auth.js"></script>
+  <script defer src="i18n.js"></script>
+</head>
+
+<body class="eightgon-page">
+  <div class="page-wrapper">
+
+    <nav class="navbar">
+      <div class="nav-container">
+        <a class="logo" href="index.html" aria-label="Back to Home">
+          <img class="logo-img" src="assets/logo/thelogo.png" alt="XAYTHEON logo" />
+        </a>
+        <ul class="nav-menu">
+          <li><a class="nav-link" href="index.html#home" data-i18n="nav.home">Home</a></li>
+          <li><a class="nav-link" href="github.html" data-i18n="nav.dashboard">GitHub Dashboard</a></li>
+          <li><a class="nav-link" href="ai-chat.html">AI Assistant</a></li>
+          <li><a class="nav-link active" href="heatmap.html">Activity Map</a></li>
+          <li><a class="nav-link" href="sentiment.html">Sentiment</a></li>
+          <li><a class="nav-link" href="workflow-builder.html">Workflow Builder</a></li>
+          <li><a class="nav-link" href="dependency-graph.html">Dep Graph</a></li>
+          <li><a class="nav-link" href="watchlist.html" data-i18n="nav.watchlist">Watchlist</a></li>
+          <li><a class="nav-link" href="compare.html">Compare</a></li>
+          <li><a class="nav-link" href="achievements.html">Achievements</a></li>
+          <li><a class="nav-link" href="community.html" data-i18n="nav.community">Community Highlights</a></li>
+          <li><a class="nav-link" href="health.html">Health Auditor</a></li>
+          <li><a class="nav-link" href="explore.html" data-i18n="nav.explore">Explore by Topic</a></li>
+          <li><a class="nav-link" href="contributions.html" data-i18n="nav.contributions">Contributions</a></li>
+          <li>
+            <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+              <svg class="theme-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5" />
+                <line x1="12" y1="1" x2="12" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="23" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="1" y1="12" x2="3" y2="12" />
+                <line x1="21" y1="12" x2="23" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+              </svg>
+            </button>
+          </li>
+          <li id="auth-area"></li>
+        </ul>
+      </div>
+    </nav>
+
+    <main>
+      <section id="analytics" class="analytics-section">
+        <div class="container">
+
+          <!-- Header -->
+          <div class="analytics-header">
+            <div>
+              <h1 class="section-title" data-i18n="analytics.title">📊 Advanced Analytics Dashboard</h1>
+              <p class="section-subtitle" data-i18n="analytics.subtitle">Track your GitHub growth over time with
+                interactive visualizations</p>
+            </div>
+            <div class="header-actions">
+              <div id="connection-status" class="connection-status hidden">
+                <span class="status-dot"></span>
+                <span class="status-text">OFFLINE</span>
+              </div>
+              <div class="last-updated" id="last-updated-info"
+                style="display: none; font-size: 0.85rem; color: var(--text-muted); margin-right: 1rem;">
+                Last updated: <span id="last-updated-time">-</span>
+              </div>
+              <div id="live-indicator" class="live-indicator"
+                style="display: none; align-items: center; gap: 6px; color: var(--color-success); font-size: 0.85rem; margin-right: 1rem; font-weight: 600;">
+                <span class="live-dot"
+                  style="width: 8px; height: 8px; background-color: currentColor; border-radius: 50%; display: inline-block; animation: pulse 1.5s infinite;"></span>
+                LIVE
+              </div>
+              <button class="btn btn-outline" id="refresh-data-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                Refresh
+              </button>
+              <button class="btn btn-primary" id="export-data-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Export Data
+              </button>
+            </div>
+          </div>
+
+          <!-- Auth Warning -->
+          <div id="auth-warning" class="warning-card" style="display: none;">
+            <div class="warning-icon">⚠️</div>
+            <div>
+              <h3>Authentication Required</h3>
+              <p>Please <a href="login.html">sign in</a> to access your analytics dashboard and track your GitHub growth
+                over time.</p>
+            </div>
+          </div>
+
+          <!-- Date Range Selector -->
+          <div class="card date-range-card">
+            <div class="card-header">
+              <h3>📅 Date Range</h3>
+            </div>
+            <div class="card-body">
+              <div class="date-range-controls">
+                <div class="field-group">
+                  <label for="start-date">Start Date</label>
+                  <input type="date" id="start-date" class="date-input" />
+                </div>
+                <div class="field-group">
+                  <label for="end-date">End Date</label>
+                  <input type="date" id="end-date" class="date-input" />
+                </div>
+                <div class="quick-ranges">
+                  <button class="btn btn-sm" data-range="7">Last 7 days</button>
+                  <button class="btn btn-sm" data-range="30">Last 30 days</button>
+                  <button class="btn btn-sm" data-range="90">Last 90 days</button>
+                  <button class="btn btn-sm" data-range="365">Last year</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Growth Metrics Overview -->
+          <div class="metrics-grid" id="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-icon">⭐</div>
+              <div class="metric-content">
+                <div class="metric-label" data-i18n="dashboard.stats.stars">Total Stars</div>
+                <div class="metric-value" id="metric-stars">—</div>
+                <div class="metric-change" id="metric-stars-change">—</div>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon">👥</div>
+              <div class="metric-content">
+                <div class="metric-label" data-i18n="dashboard.stats.followers">Followers</div>
+                <div class="metric-value" id="metric-followers">—</div>
+                <div class="metric-change" id="metric-followers-change">—</div>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon">📦</div>
+              <div class="metric-content">
+                <div class="metric-label">Public Repos</div>
+                <div class="metric-value" id="metric-repos">—</div>
+                <div class="metric-change" id="metric-repos-change">—</div>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon">💻</div>
+              <div class="metric-content">
+                <div class="metric-label" data-i18n="dashboard.stats.commits">Total Commits</div>
+                <div class="metric-value" id="metric-commits">—</div>
+                <div class="metric-change" id="metric-commits-change">—</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts Grid -->
+          <div class="charts-grid">
+
+            <!-- Stars Growth Chart -->
+            <div class="card chart-card">
+              <div class="card-header">
+                <h3>⭐ Stars Growth Over Time</h3>
+                <div class="chart-controls">
+                  <select id="stars-chart-type" class="chart-type-select">
+                    <option value="line">Line Chart</option>
+                    <option value="bar">Bar Chart</option>
+                  </select>
+                </div>
+              </div>
+              <div class="card-body">
+                <canvas id="stars-chart"></canvas>
+              </div>
+            </div>
+
+            <!-- Followers Growth Chart -->
+            <div class="card chart-card">
+              <div class="card-header">
+                <h3>👥 Followers Growth Over Time</h3>
+                <div class="chart-controls">
+                  <select id="followers-chart-type" class="chart-type-select">
+                    <option value="line">Line Chart</option>
+                    <option value="bar">Bar Chart</option>
+                  </select>
+                </div>
+              </div>
+              <div class="card-body">
+                <canvas id="followers-chart"></canvas>
+              </div>
+            </div>
+
+            <!-- Repository Growth Chart -->
+            <div class="card chart-card">
+              <div class="card-header">
+                <h3>📦 Repository Growth</h3>
+              </div>
+              <div class="card-body">
+                <canvas id="repos-chart"></canvas>
+              </div>
+            </div>
+
+            <!-- Commits Activity Chart -->
+            <div class="card chart-card">
+              <div class="card-header">
+                <h3>💻 Commit Activity</h3>
+              </div>
+              <div class="card-body">
+                <canvas id="commits-chart"></canvas>
+              </div>
+            </div>
+
+            <!-- Language Distribution -->
+            <div class="card chart-card">
+              <div class="card-header">
+                <h3>🌈 Language Distribution</h3>
+              </div>
+              <div class="card-body">
+                <canvas id="language-chart"></canvas>
+              </div>
+            </div>
+
+            <!-- Contribution Heatmap -->
+            <div class="card chart-card chart-card-wide">
+              <div class="card-header">
+                <h3>🔥 Contribution Velocity</h3>
+              </div>
+              <div class="card-body">
+                <canvas id="contribution-chart"></canvas>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Data Table -->
+          <div class="card table-card">
+            <div class="card-header">
+              <h3>📋 Historical Data</h3>
+              <button class="btn btn-sm btn-outline" id="toggle-table-btn">Show/Hide</button>
+            </div>
+            <div class="card-body" id="table-container" style="display: none;">
+              <div class="table-wrapper">
+                <table class="data-table" id="analytics-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Stars</th>
+                      <th>Followers</th>
+                      <th>Following</th>
+                      <th>Repos</th>
+                      <th>Commits</th>
+                      <th>Contributions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-body">
+                    <!-- Data will be populated by JavaScript -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-brand">
+            <span class="logo-text">XAYTHEON</span>
+            <p data-i18n="footer.tagline">Empowering the next generation of innovators</p>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p data-i18n="footer.copyright">&copy; 2026 XAYTHEON. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+
+    <div class="cursor-container">
+      <span class="cursor-dot"></span>
+      <span class="cursor-dot"></span>
+      <span class="cursor-dot"></span>
+      <span class="cursor-dot"></span>
+      <span class="cursor-dot"></span>
+      <span class="cursor-dot"></span>
+      <span class="cursor-dot"></span>
+      <span class="cursor-dot"></span>
+    </div>
+
+  </div>
+
+  <!-- Export Modal -->
+  <div id="export-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Export Analytics Data</h3>
+        <button class="modal-close" id="close-export-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Choose your preferred export format:</p>
+        <div class="export-options">
+          <button class="btn btn-primary export-option" data-format="json">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            Export as JSON
+          </button>
+          <button class="btn btn-primary export-option" data-format="csv">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            Export as CSV
+          </button>
+          <button class="btn btn-primary export-option" data-format="pdf">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <path d="M16 13H8"></path>
+              <path d="M16 17H8"></path>
+              <path d="M10 9H8"></path>
+            </svg>
+            Export as PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main app script -->
+  <script src="script.js"></script>
+  <!-- Offline Manager -->
+  <script src="offline-manager.js"></script>
+  <!-- Analytics-specific script -->
+  <script src="analytics.js"></script>
+</body>
+
+</html>

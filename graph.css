@@ -1,0 +1,161 @@
+.graph-container {
+    max-width: 100%;
+    margin: 30px auto;
+    padding: 0 40px;
+    height: 85vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.graph-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.graph-viewport-wrapper {
+    flex: 1;
+    position: relative;
+    background: #000;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+#3d-graph {
+    width: 100%;
+    height: 100%;
+}
+
+/* Overlay UI */
+.graph-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+    padding: 20px;
+}
+
+.graph-overlay .card {
+    pointer-events: auto;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 12px;
+}
+
+.legend-card {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 180px;
+}
+
+.legend-card h4 {
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+}
+
+.legend-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+.legend-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.dot.root {
+    background: #10b981;
+}
+
+.dot.prod {
+    background: #3b82f6;
+}
+
+.dot.dev {
+    background: #f59e0b;
+}
+
+.node-info-card {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 250px;
+}
+
+.info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+}
+
+.info-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+}
+
+.label {
+    color: var(--text-muted);
+}
+
+.value {
+    font-weight: 600;
+    font-family: monospace;
+}
+
+.navigation-tips {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 5px 15px;
+    border-radius: 20px;
+}
+
+.hidden {
+    display: none;
+}
+
+.graph-controls .search-box {
+    display: flex;
+    gap: 10px;
+}
+
+.graph-controls input {
+    padding: 10px 16px;
+    border-radius: 10px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    width: 300px;
+}

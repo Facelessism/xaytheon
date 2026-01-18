@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Dependency Universe — XAYTHEON</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="graph.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+    <!-- 3D Force Graph Library -->
+    <script src="//unpkg.com/3d-force-graph"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.4/dist/umd/supabase.min.js"></script>
+    <script defer src="auth.js"></script>
+</head>
+
+<body class="eightgon-page">
+    <div class="page-wrapper">
+        <nav class="navbar">
+            <div class="nav-container">
+                <a class="logo" href="index.html">
+                    <img class="logo-img" src="assets/logo/thelogo.png" alt="XAYTHEON logo">
+                </a>
+                <ul class="nav-menu">
+                    <li><a class="nav-link" href="index.html#home">Home</a></li>
+                    <li><a class="nav-link" href="github.html">Dashboard</a></li>
+                    <li><a class="nav-link" href="ai-chat.html">AI Assistant</a></li>
+                    <li><a class="nav-link active" href="dependency-graph.html">Dep Graph</a></li>
+                    <li><a class="nav-link" href="workflow-builder.html">Workflow</a></li>
+                    <li><a class="nav-link" href="sentiment.html">Sentiment</a></li>
+                    <li><a class="nav-link" href="heatmap.html">Heatmap</a></li>
+                    <li id="auth-area"></li>
+                </ul>
+            </div>
+        </nav>
+
+        <main class="graph-container">
+            <header class="graph-header">
+                <div>
+                    <h1 class="page-title">Dependency Universe</h1>
+                    <p class="page-subtitle">Interactive 3D visualization of repository architecture.</p>
+                </div>
+                <div class="graph-controls">
+                    <div class="search-box">
+                        <input type="text" id="repo-search" placeholder="owner/repo" value="SatyamPandey-07/xaytheon">
+                        <button id="analyze-btn" class="btn btn-primary">Visualize</button>
+                    </div>
+                </div>
+            </header>
+
+            <div class="graph-viewport-wrapper">
+                <div id="3d-graph"></div>
+
+                <!-- Overlay UI -->
+                <div class="graph-overlay">
+                    <div class="legend-card card">
+                        <h4>Legend</h4>
+                        <ul class="legend-list">
+                            <li><span class="dot root"></span> Root App</li>
+                            <li><span class="dot prod"></span> Production Dep</li>
+                            <li><span class="dot dev"></span> Dev Dependency</li>
+                        </ul>
+                    </div>
+
+                    <div id="node-info" class="node-info-card card hidden">
+                        <div class="info-header">
+                            <h4 id="node-name">Dependency</h4>
+                            <button id="close-info" class="icon-btn"><i class="ri-close-line"></i></button>
+                        </div>
+                        <div class="info-body">
+                            <div class="info-row">
+                                <span class="label">Version:</span>
+                                <span id="node-version" class="value">-</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Type:</span>
+                                <span id="node-type" class="value">-</span>
+                            </div>
+                            <div class="info-row" id="node-license-row">
+                                <span class="label">License:</span>
+                                <span id="node-license" class="value">MIT</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="navigation-tips">
+                        <p><i class="ri-mouse-line"></i> Left-click: Rotate | Right-click: Pan | Scroll: Zoom</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="graph.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

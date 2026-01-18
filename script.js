@@ -7,6 +7,15 @@ let isAutoRotating = true;
 let parallaxEnabled = true;
 let targetOrbitOffset = { x: 0, y: 0 };
 let currentOrbitOffset = { x: 0, y: 0 };
+// Lifecycle flags and handles
+let _isInitialized = false; // ensure init runs once
+let _listenersAttached = false; // ensure listeners attach once
+let _interactiveAttached = false; // ensure interactive effects attach once
+let _animationId = null;
+let _lastRaycast = 0; // timestamp for throttlin raycast
+const RAYCAST_MIN_INTERVAL = 60;
+let lastCanvasRect = null;
+let lastCursorState = "default";
 
 // Geometric shapes collection
 const shapes = {
@@ -19,109 +28,164 @@ const shapes = {
 
 // Initialize the 3D scene
 function init() {
-    // Get canvas element
-    const canvas = document.getElementById('three-canvas');
-    const container = document.querySelector('.canvas-container');
-    
-    // Create scene
-    scene = new THREE.Scene();
-    // Keep scene background transparent so the site stays white
-    // renderer will composite over the white page background
-    
-    // Create camera
-    const aspectRatio = container.clientWidth / container.clientHeight;
-    camera = new THREE.PerspectiveCamera(75, aspectRatio, 0.1, 1000);
-    camera.position.set(5, 5, 5);
-    
-    // Create renderer
-    renderer = new THREE.WebGLRenderer({ 
-        canvas: canvas, 
-        antialias: true,
-        alpha: true // allow DOM/page background to show through
-    });
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    
-    // Add lighting
-    setupLighting();
-    
-    // Load model: allow page to specify a different model via data-model
-    const modelPath = canvas && canvas.dataset.model ? canvas.dataset.model : 'assets/models/prism.glb';
-    loadGltfFromUrl(modelPath, undefined, () => {
-        console.warn('Falling back to primitive shape because prism.glb failed to load.');
-        safeCreatePrimitiveFallback();
-    });
-    
-    // Setup controls
-    setupControls();
-    
-    // Setup event listeners
-    setupEventListeners();
-    
-    // Hide loading screen
-    // and announce completion
-setTimeout(() => {
-    const loader = document.getElementById('loading-screen');
-    loader.classList.add('hidden');
+  if (_isInitialized) {
+    console.warn("init() already called; skipping reinitialization.");
+    return;
+  }
 
-    // Screen reader announcement
-    const doneMsg = document.createElement('div');
-    doneMsg.setAttribute('role', 'status');
-    doneMsg.setAttribute('aria-live', 'polite');
-    doneMsg.classList.add('sr-only'); // visually hidden
-    doneMsg.textContent = 'XAYTHEON has finished loading.';
-    document.body.appendChild(doneMsg);
-}, 1000);
+  // Get canvas element
+  const canvas = document.getElementById('three-canvas');
+  const container = document.querySelector('.canvas-container');
 
-    
-    // Start animation loop
-    animate();
+  if (!canvas || !container) {
+    console.error("Canvas or container element not found; aborting init().");
+    return;
+  }
 
-
+  // Ensure THREE is present
+  if (typeof THREE === "undefined") {
+    console.error("Three.js is not loaded; cannot initialize 3D scene.");
+    return;
+  }
+  _isInitialized = true;
   // Create scene
   scene = new THREE.Scene();
   // Keep scene background transparent so the site stays white
   // renderer will composite over the white page background
 
   // Create camera
+  const aspectRatio = container.clientWidth / container.clientHeight;
   camera = new THREE.PerspectiveCamera(75, aspectRatio, 0.1, 1000);
   camera.position.set(5, 5, 5);
 
   // Create renderer
   renderer = new THREE.WebGLRenderer({
-    canvas: canvas,
+    canvas,
     antialias: true,
     alpha: true, // allow DOM/page background to show through
   });
   renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.setClearColor(0x000000, 0); // keep transparent
 
   // Add lighting
   setupLighting();
-
-
   // Setup controls
   setupControls();
 
-  // Setup event listeners
-  setupEventListeners();
+  // Load model: allow page to specify a different model via data-model
+  const modelPath = canvas && canvas.dataset.model ? canvas.dataset.model : 'assets/models/prism.glb';
+  loadGltfFromUrl(modelPath, undefined, () => {
+    console.warn('Falling back to primitive shape because prism.glb failed to load.');
+    safeCreatePrimitiveFallback();
+  });
 
+  // Setup event listeners & interactive effects
+  setupEventListeners();
+  addInteractiveEffects();
   // Hide loading screen
+  // and announce completion
   setTimeout(() => {
-    document.getElementById("loading-screen").classList.add("hidden");
+    const loader = document.getElementById("loading-screen");
+    if (loader) loader.classList.add("hidden");
+
+    // Screen reader announcement
+    const doneMsg = document.createElement("div");
+    doneMsg.setAttribute("role", "status");
+    doneMsg.setAttribute("aria-live", "polite");
+    doneMsg.classList.add("sr-only");
+    doneMsg.textContent = "XAYTHEON has finished loading.";
+    document.body.appendChild(doneMsg);
   }, 1000);
 
   // Start animation loop
-  animate();
- main
+  startAnimation();
 }
 
+function disposeScene() {
+  // Stop animation loop
+  stopAnimation();
+
+  if (_listenersAttached) {
+    // Some listeners are attached to specific elements; we guard-check them inside setupEventListeners
+    // We do not attempt to remove anonymous closures here other than global ones below.
+    window.removeEventListener("resize", onWindowResize);
+    _listenersAttached = false;
+  }
+
+  if (_interactiveAttached) {
+    // remove global listeners added by interactive effects (if necessary)
+    // Those were attached with named functions stored on renderer.domElement where possible
+    // For simplicity we won't aggressively remove every handler, but nullify refs to free memory
+    _interactiveAttached = false;
+  }
+
+  // Dispose meshes and models
+  if (currentMesh) {
+    scene.remove(currentMesh);
+    if (currentMesh.geometry) currentMesh.geometry.dispose();
+    if (currentMesh.material) {
+      if (Array.isArray(currentMesh.material)) {
+        currentMesh.material.forEach((m) => m.dispose && m.dispose());
+      } else {
+        currentMesh.material.dispose && currentMesh.material.dispose();
+      }
+    }
+    currentMesh = null;
+  }
+
+  if (currentModel) {
+    scene.remove(currentModel);
+    disposeObject(currentModel);
+    currentModel = null;
+  }
+
+  if (scene) {
+    const lightsToRemove = [];
+    scene.traverse(obj => {
+      if (obj.isLight) {
+        lightsToRemove.push(obj);
+      }
+    });
+    lightsToRemove.forEach(light => scene.remove(light));
+  }
+
+  // Dispose renderer
+  try {
+    if (renderer) {
+      renderer.forceContextLoss && renderer.forceContextLoss();
+      if (renderer.domElement && renderer.domElement.width) {
+        renderer.domElement.width = 1;
+        renderer.domElement.height = 1;
+      }
+      renderer = null;
+    }
+  } catch (e) {
+    console.warn("Renderer disposal failed:", e);
+  }
+
+  if (window.__interactiveCleanup) {
+    window.__interactiveCleanup();
+    window.__interactiveCleanup = null;
+  }
+  // Clear controls
+  if (controls && typeof controls.dispose === "function") {
+    controls.dispose();
+  }
+  controls = null;
+  scene = null;
+  camera = null;
+  _isInitialized = false;
+}
+
+// -----------------------------
+// Lighting and Controls
+// -----------------------------
 // Setup lighting
 function setupLighting() {
+  if (!scene) return;
   // Ambient light
   const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
   scene.add(ambientLight);
@@ -157,23 +221,39 @@ function setupControls() {
   controls.enableRotate = true;
 }
 
-// Create a 3D shape
+// -----------------------------
+// Shape creation and model handling
+// -----------------------------
 function createShape(shapeType) {
   // Remove existing mesh
   if (currentMesh) {
     scene.remove(currentMesh);
-    currentMesh.geometry.dispose();
-    currentMesh.material.dispose();
+    if (currentMesh.geometry) currentMesh.geometry.dispose();
+    if (currentMesh.material) {
+      if (Array.isArray(currentMesh.material)) {
+        currentMesh.material.forEach((m) => m.dispose && m.dispose());
+      } else {
+        currentMesh.material.dispose && currentMesh.material.dispose();
+      }
+    }
+    currentMesh = null;
   }
-  // Hide/remove model if present when switching to primitive
+  // Remove existing model
   if (currentModel) {
-    scene.remove(currentModel);
-    disposeObject(currentModel);
+    try {
+      scene.remove(currentModel);
+      disposeObject(currentModel);
+    } catch (e) { }
     currentModel = null;
   }
 
   // Create new geometry
-  const geometry = shapes[shapeType]();
+  const creator = shapes[shapeType];
+  if (!creator) {
+    console.warn("Unknown shape type:", shapeType);
+    return;
+  }
+  const geometry = creator();
 
   // Create material with current settings (guard optional controls)
   const colorEl = document.getElementById("color-picker");
@@ -202,47 +282,46 @@ function createShape(shapeType) {
 
 // Setup event listeners
 function setupEventListeners() {
-  // Guard optional controls if they exist in DOM
+  if (_listenersAttached) return;
+  _listenersAttached = true;
+
+  // UI controls: guard each element's existence
   const shapeSel = document.getElementById("shape-selector");
-  if (shapeSel)
-    shapeSel.addEventListener("change", (e) => createShape(e.target.value));
+  if (shapeSel) shapeSel.addEventListener("change", (e) => createShape(e.target.value));
 
   const colorPicker = document.getElementById("color-picker");
   if (colorPicker)
     colorPicker.addEventListener("input", (e) => {
-      if (currentMesh) currentMesh.material.color.set(e.target.value);
+      if (currentMesh && currentMesh.material && currentMesh.material.color) {
+        currentMesh.material.color.set(e.target.value);
+      }
     });
-
   const wireframeToggle = document.getElementById("wireframe-toggle");
   if (wireframeToggle)
     wireframeToggle.addEventListener("change", (e) => {
-      if (currentMesh) currentMesh.material.wireframe = e.target.checked;
+      if (currentMesh && currentMesh.material) currentMesh.material.wireframe = e.target.checked;
     });
 
   const rotationSpeed = document.getElementById("rotation-speed");
-  if (rotationSpeed)
-    rotationSpeed.addEventListener("input", (e) => {
-      autoRotationSpeed = parseFloat(e.target.value);
-      isAutoRotating = autoRotationSpeed > 0;
-    });
-
+  if (rotationSpeed) rotationSpeed.addEventListener("input", (e) => {
+    autoRotationSpeed = parseFloat(e.target.value) || 0;
+    isAutoRotating = autoRotationSpeed > 0;
+  });
   const resetBtn = document.getElementById("reset-camera");
-  if (resetBtn)
-    resetBtn.addEventListener("click", () => {
-      camera.position.set(5, 5, 5);
-      controls.reset();
-    });
-
+  if (resetBtn) resetBtn.addEventListener("click", () => {
+    if (camera) camera.position.set(5, 5, 5);
+    if (controls && typeof controls.reset === "function") controls.reset();
+  });
   const fileInput = document.getElementById("model-file");
   if (fileInput) fileInput.addEventListener("change", handleModelUpload);
 
   const sampleBtn = document.getElementById("load-sample");
-  if (sampleBtn)
-    sampleBtn.addEventListener("click", () => {
-      loadGltfFromUrl(
-        "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb"
-      );
-    });
+  if (sampleBtn) sampleBtn.addEventListener("click", () => {
+    loadGltfFromUrl(
+      "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb"
+    );
+  });
+
 
   // Handle window resize
   window.addEventListener("resize", onWindowResize);
@@ -251,49 +330,70 @@ function setupEventListeners() {
 // Handle window resize
 function onWindowResize() {
   const container = document.querySelector(".canvas-container");
-  const aspectRatio = container.clientWidth / container.clientHeight;
-
+  if (!container || !camera || !renderer) return;
+  const aspectRatio = Math.max(1, container.clientWidth) / Math.max(1, container.clientHeight);
   camera.aspect = aspectRatio;
   camera.updateProjectionMatrix();
-
   renderer.setSize(container.clientWidth, container.clientHeight);
 }
 
-// Animation loop
-function animate() {
-  requestAnimationFrame(animate);
 
-  // Auto rotation
+// Animation loop
+function animateLoop(time) {
+  // Schedule next frame
+  _animationId = requestAnimationFrame(animateLoop);
+
+  // Auto rotation of primitive mesh
   if (currentMesh && isAutoRotating) {
     currentMesh.rotation.x += autoRotationSpeed;
     currentMesh.rotation.y += autoRotationSpeed * 1.5;
   }
-
-  // Update tweens
-  if (typeof TWEEN !== "undefined") {
-    TWEEN.update();
-  }
-
-  // Update controls
-  // Parallax: subtly nudge controls target toward mouse-based offset
+  // Update TWEEN if present
+  if (typeof TWEEN !== "undefined" && TWEEN.update) TWEEN.update();
+  // Parallax and controls update
   if (parallaxEnabled && controls) {
-    // ease offsets
     currentOrbitOffset.x += (targetOrbitOffset.x - currentOrbitOffset.x) * 0.05;
     currentOrbitOffset.y += (targetOrbitOffset.y - currentOrbitOffset.y) * 0.05;
-    controls.target.set(currentOrbitOffset.x, currentOrbitOffset.y, 0);
+    // Keep z at 0 so orbit target remains planar
+    if (controls.target) controls.target.set(currentOrbitOffset.x, currentOrbitOffset.y, 0);
   }
-  controls.update();
-
-  // Rotate the loaded model around its Y axis continuously
+  if (controls && typeof controls.update === "function") controls.update();
+  // Rotate loaded model
   if (currentModel && isAutoRotating) {
     currentModel.rotation.y += autoRotationSpeed;
   }
-
-  // Render scene
-  renderer.render(scene, camera);
+  // Throttled raycast processing for hover highlights (if interactive attached)
+  const now = performance.now();
+  if (_interactiveAttached && now - _lastRaycast >= RAYCAST_MIN_INTERVAL) {
+    _lastRaycast = now;
+    if (typeof window.__processRaycast === "function") {
+      try {
+        window.__processRaycast();
+      } catch (e) {
+        // avoid breaking render loop
+        console.warn("Raycast process error:", e);
+      }
+    }
+  }
+  // Render (guard)
+  if (renderer && scene && camera) {
+    renderer.render(scene, camera);
+  }
+}
+function startAnimation() {
+  if (_animationId !== null) return; // already running
+  _animationId = requestAnimationFrame(animateLoop);
+}
+function stopAnimation() {
+  if (_animationId !== null) {
+    cancelAnimationFrame(_animationId);
+    _animationId = null;
+  }
 }
 
+//-----------------------------------------
 // ---------- GLTF MODEL LOADING ----------
+//-----------------------------------------
 function handleModelUpload(event) {
   const file = event.target.files && event.target.files[0];
   if (!file) return;
@@ -304,14 +404,30 @@ function handleModelUpload(event) {
 
 function loadGltfFromUrl(url, onDone, onError) {
   showLoading(true, "Loading Model...");
+  if (typeof THREE === "undefined" || !THREE.GLTFLoader) {
+    const err = new Error("GLTFLoader unavailable");
+    console.warn(err);
+    showLoading(false);
+    if (typeof onError === "function") onError(err);
+    if (typeof onDone === "function") onDone();
+    return;
+  }
+
   const loader = new THREE.GLTFLoader();
   loader.load(
     url,
     (gltf) => {
+      // Clean up current mesh if present
       if (currentMesh) {
         scene.remove(currentMesh);
-        currentMesh.geometry.dispose();
-        currentMesh.material.dispose();
+        if (currentMesh.geometry) currentMesh.geometry.dispose();
+        if (currentMesh.material) {
+          if (Array.isArray(currentMesh.material)) {
+            currentMesh.material.forEach((m) => m.dispose && m.dispose());
+          } else {
+            currentMesh.material.dispose && currentMesh.material.dispose();
+          }
+        }
         currentMesh = null;
       }
 
@@ -346,7 +462,9 @@ function safeCreatePrimitiveFallback() {
     console.warn("Fallback primitive creation failed:", e);
   }
 }
-
+//-------------------------------
+//---------Model utilities-------
+//-------------------------------
 function preprocessModel(object3d) {
   object3d.traverse((child) => {
     if (child.isMesh) {
@@ -434,49 +552,42 @@ function showLoading(visible, text) {
   el.classList.toggle("hidden", !visible);
 }
 
-// Add some interactive effects
+//----------------------------------------
+// ---------Interactive effects-----------
+//----------------------------------------
 function addInteractiveEffects() {
+  if (_interactiveAttached) return;
+  if (!renderer || !camera) {
+    console.warn("Renderer or camera missing; skipping interactive effects.");
+    return;
+  }
+  _interactiveAttached = true;
   // Mouse interaction with the mesh
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
+  const canvas = renderer.domElement;
 
-  function onMouseMove(event) {
+  function onDomMouseMove(event) {
     const canvas = renderer.domElement;
     const rect = canvas.getBoundingClientRect();
-
+    lastCanvasRect = rect;
     mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-    raycaster.setFromCamera(mouse, camera);
-
-    if (currentMesh) {
-      const intersects = raycaster.intersectObject(currentMesh);
-
-      if (intersects.length > 0) {
-        // Highlight effect on hover
-        currentMesh.material.emissive.setHex(0x111111);
-        canvas.style.cursor = "pointer";
-      } else {
-        currentMesh.material.emissive.setHex(0x000000);
-        canvas.style.cursor = "default";
-      }
-    }
+    // Mark raycast to be run by animation loop
+    window.__raycastMouse = { x: mouse.x, y: mouse.y };
   }
 
-  function onMouseClick(event) {
-    const canvas = renderer.domElement;
+  function onDomClick(event) {
+    // Update normalized coords immediately so click hit is responsive
     const rect = canvas.getBoundingClientRect();
+    const mx = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    const my = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera({ x: mx, y: my }, camera);
 
-    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-    raycaster.setFromCamera(mouse, camera);
-
+    // Prefer currentMesh clicks for primitives
     if (currentMesh) {
-      const intersects = raycaster.intersectObject(currentMesh);
-
+      const intersects = raycaster.intersectObject(currentMesh, false);
       if (intersects.length > 0) {
-        // Add click animation
         animateClick();
       }
     }
@@ -503,20 +614,52 @@ function addInteractiveEffects() {
     scaleUp.start();
   }
 
-  // Add event listeners
-  renderer.domElement.addEventListener("mousemove", onMouseMove);
-  renderer.domElement.addEventListener("click", onMouseClick);
+  // Expose a processing function to be called from the render loop in a throttled way
+  window.__processRaycast = function () {
+    if (!window.__raycastMouse) return;
+    const m = window.__raycastMouse;
+    raycaster.setFromCamera(m, camera);
 
-  // Parallax: track mouse position relative to viewport
-  window.addEventListener("mousemove", (e) => {
+    if (currentMesh) {
+      const intersects = raycaster.intersectObject(currentMesh, false);
+      const canvas = renderer.domElement;
+
+      if (intersects.length > 0) {
+        // Highlight effect on hover
+        try {
+          if (currentMesh.material && currentMesh.material.emissive) {
+            currentMesh.material.emissive.setHex(0x111111);
+          }
+          if (lastCursorState !== "pointer") {
+            canvas.style.cursor = "pointer";
+            lastCursorState = "pointer";
+          }
+        } catch (e) {
+          // ignore material state errors
+        }
+      } else {
+        try {
+          if (currentMesh.material && currentMesh.material.emissive) {
+            currentMesh.material.emissive.setHex(0x000000);
+          }
+          if (lastCursorState !== "default") {
+            canvas.style.cursor = "default";
+            lastCursorState = "default";
+          }
+        } catch (e) { }
+      }
+    }
+  };
+
+  // Parallax by tracking viewport mouse position (lightweight)
+  function onWindowMouseMove(e) {
     const nx = (e.clientX / window.innerWidth) * 2 - 1; // -1..1
     const ny = (e.clientY / window.innerHeight) * 2 - 1; // -1..1
     targetOrbitOffset.x = nx * 0.5; // subtle
     targetOrbitOffset.y = -ny * 0.3; // subtle
-  });
+  }
 
   // Adjust canvas opacity slightly by scroll position for depth
-  const canvas = renderer.domElement;
   const setOpacityByScroll = () => {
     const top = window.scrollY;
     const max = 600; // after hero
@@ -527,34 +670,65 @@ function addInteractiveEffects() {
     const maxOpacity = maxAttr ? parseFloat(maxAttr) : 0.35;
     const extra = Math.min(top / max, 1) * (maxOpacity - base);
     canvas.style.opacity = Math.min(base + extra, maxOpacity).toFixed(2);
-  };
+  }
+  // Attach listeners to renderer.domElement and window (only once)
+  canvas.addEventListener("mousemove", onDomMouseMove);
+  canvas.addEventListener("click", onDomClick);
+  window.addEventListener("mousemove", onWindowMouseMove);
   window.addEventListener("scroll", setOpacityByScroll);
   setOpacityByScroll();
+
+  // Keep a reference cleanup function in case disposeScene wants to remove (optional)
+  window.__interactiveCleanup = () => {
+    try {
+      canvas.removeEventListener("mousemove", onDomMouseMove);
+      canvas.removeEventListener("click", onDomClick);
+      window.removeEventListener("mousemove", onWindowMouseMove);
+      window.removeEventListener("scroll", setOpacityByScroll);
+    } catch (e) { }
+    delete window.__processRaycast;
+    delete window.__interactiveCleanup;
+    _interactiveAttached = false;
+  };
 }
 
 // Initialize when page loads
 document.addEventListener("DOMContentLoaded", () => {
   // Initialize theme first before anything else
-  initTheme();
+  // initTheme();
 
   // If the 3D canvas exists, we're on the home page; otherwise, dashboard-only page.
   const hasThree = !!document.getElementById("three-canvas");
   if (hasThree) {
     console.log("🎯 Initializing 3D Demo...");
     init();
-    addInteractiveEffects();
     console.log("✅ 3D Demo ready!");
   }
   // Initialize GitHub dashboard UI if present on the page
   initGithubDashboard();
   // Initialize the mini 3D viewer on github.html if present
   initMiniViewer();
+  // Delay recommendations to allow auth setup
+  setTimeout(initRecommendations, 1500);
+
+  // Listen for auth changes to apply preferences
+  window.addEventListener("xaytheon:authchange", async (e) => {
+    const user = e.detail.user;
+    if (user) {
+      // User logged in, fetch prefs
+      const prefs = await window.XAYTHEON_AUTH.fetchPreferences();
+      if (prefs && prefs.theme) {
+        setTheme(prefs.theme);
+        localStorage.setItem("xaytheon:theme", prefs.theme);
+      }
+    }
+  });
 });
+
 
 // ===================== DARK MODE / THEME MANAGEMENT =====================
 function initTheme() {
   const savedTheme = localStorage.getItem("xaytheon:theme");
-
   if (savedTheme) {
     setTheme(savedTheme);
   } else {
@@ -627,16 +801,22 @@ function setTheme(theme) {
   updateCanvasForTheme(theme);
 }
 
-function saveTheme(theme) {
-  localStorage.setItem("xaytheon:theme", theme);
-}
-
 /**
  * Save theme preference to localStorage
  * @param {string} theme - 'light' or 'dark'
+ * 
  */
 function saveTheme(theme) {
-  localStorage.setItem("xaytheon:theme", theme);
+  try {
+    localStorage.setItem("xaytheon:theme", theme);
+
+    // Sync with backend if logged in
+    if (window.XAYTHEON_AUTH && window.XAYTHEON_AUTH.isAuthenticated()) {
+      window.XAYTHEON_AUTH.savePreferences({ theme });
+    }
+  } catch (e) {
+    console.warn("Could not save theme:", e);
+  }
 }
 
 /**
@@ -648,6 +828,9 @@ function updateCanvasForTheme(theme) {
   if (!canvas) return;
 }
 
+// -----------------------------
+// Developer console instructions
+// -----------------------------
 // Add some console instructions for developers
 console.log(`
 🎯 Interactive 3D Demo - Developer Console
@@ -669,394 +852,506 @@ Have fun exploring! 🚀
 `);
 
 // ===================== GitHub Dashboard =====================
+
+// Dashboard request state
+let dashboardState = "idle";
+let requestInFlight = false;
+
+// History Management
+const HISTORY_MANAGER = {
+  storageKey: "xaytheon:gh:history",
+  maxSnapshots: 30,
+
+  saveSnapshot(username, metrics) {
+    const history = this.getHistory(username);
+    const snapshot = {
+      timestamp: Date.now(),
+      date: new Date().toISOString(),
+      ...metrics
+    };
+
+    history.unshift(snapshot);
+
+    if (history.length > this.maxSnapshots) {
+      history.splice(this.maxSnapshots);
+    }
+
+    const allHistory = JSON.parse(localStorage.getItem(this.storageKey) || "{}");
+    allHistory[username] = history;
+    localStorage.setItem(this.storageKey, JSON.stringify(allHistory));
+
+    return snapshot;
+  },
+
+  getHistory(username) {
+    const allHistory = JSON.parse(localStorage.getItem(this.storageKey) || "{}");
+    return allHistory[username] || [];
+  },
+
+  clearHistory(username) {
+    const allHistory = JSON.parse(localStorage.getItem(this.storageKey) || "{}");
+    if (username) {
+      delete allHistory[username];
+      localStorage.setItem(this.storageKey, JSON.stringify(allHistory));
+    } else {
+      localStorage.removeItem(this.storageKey);
+    }
+  },
+
+  getPreviousSnapshot(username) {
+    const history = this.getHistory(username);
+    return history.length > 1 ? history[1] : null;
+  }
+};
+
 // Cache management with TTL
 const GITHUB_CACHE = {
-  TTL: 10 * 60 * 1000, // 10 minutes
-  prefix: 'xaytheon:gh:',
-  
+  TTL: 10 * 60 * 1000,
+  prefix: "xaytheon:gh:",
+
   set(key, data) {
-    try {
-      const entry = {
-        data,
-        timestamp: Date.now()
-      };
-      localStorage.setItem(this.prefix + key, JSON.stringify(entry));
-    } catch (e) {
-      console.warn('Cache set failed:', e);
-    }
+    localStorage.setItem(
+      this.prefix + key,
+      JSON.stringify({ data, timestamp: Date.now() })
+    );
   },
-  
-  get(key) {
-    try {
-      const item = localStorage.getItem(this.prefix + key);
-      if (!item) return null;
-      
-      const entry = JSON.parse(item);
-      const age = Date.now() - entry.timestamp;
-      
-      if (age > this.TTL) {
-        this.remove(key);
-        return null;
-      }
-      
-      return entry.data;
-    } catch (e) {
-      console.warn('Cache get failed:', e);
-      return null;
+
+  get(key, ignoreExpiration = false) {
+    const raw = localStorage.getItem(this.prefix + key);
+    if (!raw) return null;
+
+    const entry = JSON.parse(raw);
+    if (!ignoreExpiration && Date.now() - entry.timestamp > this.TTL) {
+      // Mark as expired but return date so caller can decide
+      return { data: entry.data, expired: true, timestamp: entry.timestamp };
     }
+    return { data: entry.data, expired: false, timestamp: entry.timestamp };
   },
-  
-  remove(key) {
-    try {
-      localStorage.removeItem(this.prefix + key);
-    } catch (e) {
-      console.warn('Cache remove failed:', e);
-    }
-  },
-  
+
   clear() {
-    try {
-      const keys = Object.keys(localStorage).filter(k => k.startsWith(this.prefix));
-      keys.forEach(k => localStorage.removeItem(k));
-    } catch (e) {
-      console.warn('Cache clear failed:', e);
-    }
-  }
-};
-
-// Debounce helper
-function debounce(func, delay) {
-  let timeoutId;
-  return function(...args) {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func.apply(this, args), delay);
-  };
-}
-
-// API call tracker for rate limiting
-const API_TRACKER = {
-  lastCall: 0,
-  minInterval: 1000, // 1 second between calls
-  
-  canCall() {
-    const now = Date.now();
-    return (now - this.lastCall) >= this.minInterval;
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith(this.prefix))
+      .forEach((k) => localStorage.removeItem(k));
   },
-  
-  recordCall() {
-    this.lastCall = Date.now();
-  }
 };
 
-function initGithubDashboard() {
-  const form = document.getElementById("github-form");
-  if (!form) return; // section not present
+// Chart instance
+let historyChart = null;
 
-  const usernameInput = document.getElementById("gh-username");
+// ---------------- UI STATE HANDLER ----------------
+function setDashboardState(state, message = "") {
+  dashboardState = state;
+
+  const submitBtn = document.querySelector(
+    '#github-form button[type="submit"]'
+  );
   const clearBtn = document.getElementById("gh-clear");
   const status = document.getElementById("github-status");
-  let isLoading = false;
-  
-  usernameInput.addEventListener('input', () => {
-    setStatus('');
+
+  const loading = state === "loading";
+
+  if (submitBtn && clearBtn) {
+    submitBtn.disabled = loading;
+    clearBtn.disabled = loading;
+    submitBtn.textContent = loading ? "Loading…" : "Load Dashboard";
+  }
+
+  if (status) {
+    status.textContent = message;
+    status.className = `github-status ${state}`;
+  }
+}
+
+// Helper to clear dashboard UI
+function clearDashboardUI() {
+  const avatar = document.getElementById("gh-avatar");
+  if (avatar) avatar.src = "";
+
+  ["gh-name", "gh-login", "gh-bio"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = "";
   });
 
+  ["gh-followers", "gh-following", "gh-repos-count"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = "0";
+  });
 
+  const repoList = document.getElementById("gh-repo-list");
+  if (repoList) repoList.innerHTML = '<div class="muted">Load a dashboard to see repositories</div>';
 
-  // Restore saved creds
-  try {
-    const saved = JSON.parse(
-      localStorage.getItem("xaytheon:ghCreds") || "null"
-    );
-    if (saved && saved.username) {
-      usernameInput.value = saved.username;
-      loadGithubDashboard(saved.username);
-    }
-  } catch { }
+  const activityList = document.getElementById("gh-activity-list");
+  if (activityList) activityList.innerHTML = '<li class="activity-item muted">Load a dashboard to see activity</li>';
+
+  const contribSvg = document.getElementById("gh-contrib-svg");
+  if (contribSvg) contribSvg.innerHTML = '<div class="muted">Load a dashboard to see contributions</div>';
+
+  ["gh-pr-metrics", "gh-languages"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
+}
+
+// ---------------- INIT ----------------
+function initGithubDashboard() {
+  const form = document.getElementById("github-form");
+  if (!form) return;
+
+  const usernameInput = document.getElementById("gh-username");
+
+  const saved = JSON.parse(localStorage.getItem("xaytheon:ghCreds") || "null");
+  if (saved?.username) {
+    usernameInput.value = saved.username;
+    loadGithubDashboard(saved.username);
+  }
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     const username = usernameInput.value.trim();
 
-    // Validate username presence
     if (!username) {
-      setStatus("Please enter a GitHub username.", "error");
-      usernameInput.focus();
+      setDashboardState("error", "Please enter a GitHub username.");
       return;
     }
 
-    // Validate username format (GitHub username rules)
-    const usernameRegex = /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/;
-    if (!usernameRegex.test(username)) {
-      setStatus("Please enter a valid GitHub username (alphanumeric characters and hyphens only).", "error");
-      usernameInput.focus();
+    if (requestInFlight) {
+      setDashboardState("error", "Dashboard is already loading. Please wait.");
       return;
     }
 
-    // Validate username length
-    if (username.length < 1 || username.length > 39) {
-      setStatus("GitHub username must be between 1 and 39 characters.", "error");
-      usernameInput.focus();
-      return;
-    }
-    
-    // Prevent multiple simultaneous requests
-    if (isLoading) {
-      setStatus("Please wait, loading in progress...", "error");
-      return;
-    }
-    
-    // Rate limiting check
-    if (!API_TRACKER.canCall()) {
-      setStatus("Please wait a moment before making another request.", "error");
-      return;
-    }
-    
-    // Save only username
-    localStorage.setItem("xaytheon:ghCreds", JSON.stringify({ username }));
-    loadGithubDashboard(username).finally(() => {
-      isLoading = false;
-    });
+    localStorage.setItem(
+      "xaytheon:ghCreds",
+      JSON.stringify({ username })
+    );
+
+    loadGithubDashboard(username);
   });
 
-  clearBtn.addEventListener("click", () => {
-    // Remove saved username
+  // Clear Cache button - preserves history
+  document.getElementById("gh-clear").addEventListener("click", () => {
+    if (requestInFlight) return;
+
+    // Clear credentials and cache, but KEEP history
     localStorage.removeItem("xaytheon:ghCreds");
-    // Clear cache
     GITHUB_CACHE.clear();
-    // Clear input field
-    const usernameInput = document.getElementById("gh-username");
-    if (usernameInput) usernameInput.value = "";
+    usernameInput.value = "";
 
-    // Clear all visible dashboard panels
-    const set = (id, val) => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = val;
-    };
-    const setHtml = (id, val) => {
-      const el = document.getElementById(id);
-      if (el) el.innerHTML = val;
-    };
-    const avatar = document.getElementById("gh-avatar");
-    if (avatar) avatar.removeAttribute("src");
-    set("gh-name", "—");
-    set("gh-login", "—");
-    set("gh-bio", "");
-    set("gh-followers", "0");
-    set("gh-following", "0");
-    set("gh-repos-count", "0");
-    setHtml("gh-repo-list", "");
-    setHtml("gh-activity-list", "");
-    setHtml("gh-contrib-svg", "");
-    const note = document.getElementById("gh-contrib-note");
-    if (note) note.textContent = "Enter a username and press Load Dashboard.";
-    setStatus("Cleared saved username and dashboard.");
+    // Clear the UI display but don't delete history data
+    clearDashboardUI();
+    setDashboardState("idle", "Cache cleared. History preserved.");
+    renderMetricsTrends(null, null);
+    renderHistoryChart([]);
+    renderSnapshotList([]);
   });
 
-  function setStatus(msg, level = "info") {
-    if (!status) return;
-    status.textContent = msg;
-    status.style.opacity = 1;
-    status.style.color = level === "error" ? "#b91c1c" : "#111827";
-    setTimeout(() => {
-      status.style.opacity = 0.8;
-    }, 2500);
-  }
+  // Clear History button - only clears snapshots, not cache
+  document.getElementById("clear-history").addEventListener("click", () => {
+    const username = usernameInput.value.trim();
+
+    if (!username) {
+      // If no username in input, ask user to confirm clearing ALL history
+      if (confirm("Clear history for ALL users? This cannot be undone.")) {
+        HISTORY_MANAGER.clearHistory(); // Clear all
+        renderMetricsTrends(null, null);
+        renderHistoryChart([]);
+        renderSnapshotList([]);
+        setDashboardState("success", "All user history cleared.");
+      }
+    } else {
+      // Clear history for current username only
+      if (confirm(`Clear history for ${username}? This cannot be undone.`)) {
+        HISTORY_MANAGER.clearHistory(username);
+        renderMetricsTrends(null, null);
+        renderHistoryChart([]);
+        renderSnapshotList([]);
+        setDashboardState("success", `History cleared for ${username}.`);
+      }
+    }
+  });
 }
 
+// ---------------- LOAD DASHBOARD ----------------
 async function loadGithubDashboard(username) {
-  const headers = {};
-  const set = (id, val) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = val;
-  };
-  const setHtml = (id, val) => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = val;
-  };
-  const setDisplay = (id, disp) => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = disp;
-  };
-  const avatar = document.getElementById("gh-avatar");
+  requestInFlight = true;
+  setDashboardState("loading", "Loading GitHub dashboard…");
 
-  // Status
-  const status = document.getElementById("github-status");
-  const statusMsg = (m, level = "info") => {
-    if (status) {
-      status.textContent = m;
-      status.style.color = level === "error" ? "#b91c1c" : "#111827";
-    }
-  };
-  
-  // Disable submit button during load
-  const submitBtn = document.querySelector('#github-form button[type="submit"]');
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Loading...';
-  }
-
-  // Check cache first
   const cacheKey = `dashboard:${username}`;
-  const cached = GITHUB_CACHE.get(cacheKey);
-  
-  if (cached) {
-    statusMsg("Loading from cache (fetching fresh data in background)...");
-    renderDashboardData(cached, username);
-    // Fetch fresh data in background
-    fetchAndCacheDashboard(username).catch(console.error);
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Load Dashboard';
-    }
+  const cached = GITHUB_CACHE.get(cacheKey, true); // Get even if expired
+
+  if (cached && !cached.expired) {
+    renderDashboardData(cached.data, username);
+    setDashboardState(
+      "success",
+      "Loaded from cache • refreshing in background ♻️"
+    );
+    requestInFlight = false;
+    fetchAndCacheDashboard(username);
     return;
   }
 
   try {
-    API_TRACKER.recordCall();
-    statusMsg("Loading profile…");
-    // Profile
     const user = await ghJson(
-      `https://api.github.com/users/${encodeURIComponent(username)}`,
-      headers
+      `https://api.github.com/users/${username}`
     );
-    if (avatar) avatar.src = user.avatar_url;
-    set("gh-name", user.name || "—");
-    set("gh-login", `@${user.login}`);
-    set("gh-bio", user.bio || "");
-    set("gh-followers", user.followers ?? 0);
-    set("gh-following", user.following ?? 0);
 
-    // Repos (public) - paginated, we fetch top 100 then sort by stargazers
-    statusMsg("Loading repositories…");
     const repos = await ghJson(
-      `https://api.github.com/users/${encodeURIComponent(
-        username
-      )}/repos?per_page=100&sort=updated`,
-      headers
+      `https://api.github.com/users/${username}/repos?per_page=100`
     );
-    set("gh-repos-count", (user.public_repos ?? repos.length) + "");
-    const top = [...repos]
-      .filter((r) => !r.fork)
-      .sort((a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0))
-      .slice(0, 8);
-    renderRepos(top);
 
-    // Activity (public events)
-    statusMsg("Loading activity…");
     const events = await ghJson(
-      `https://api.github.com/users/${encodeURIComponent(
-        username
-      )}/events/public?per_page=25`,
-      headers
+      `https://api.github.com/users/${username}/events/public?per_page=25`
     );
-    renderActivity(events.slice(0, 10));
 
-    // Contributions: tokenless path — try third-party full-year chart, fallback to approximate heatmap
-    const contribNote = document.getElementById("gh-contrib-note");
-    const container = document.getElementById("gh-contrib-svg");
-    if (contribNote)
-      contribNote.textContent =
-        "Full-year chart via third-party (ghchart.rshah.org). If it fails, we will show an approximate heatmap.";
-    setDisplay("gh-contrib-note", "block");
-    if (container) {
-      container.innerHTML =
-        '<div class="muted">Loading public contributions…</div>';
-      const img = new Image();
-      img.src = `https://ghchart.rshah.org/${encodeURIComponent(username)}`;
-      img.alt = `${username}'s contributions (third-party chart)`;
-      img.style.maxWidth = "100%";
-      img.style.height = "auto";
-      img.referrerPolicy = "no-referrer";
-      img.onload = () => {
-        container.innerHTML = "";
-        container.appendChild(img);
-      };
-      img.onerror = () => {
-        try {
-          const svg = renderEventHeatmap(events);
-          container.innerHTML = svg;
-          if (contribNote)
-            contribNote.textContent =
-              "Approximate heatmap based on recent public activity.";
-        } catch (e) {
-          console.warn("Event heatmap failed", e);
-          container.innerHTML =
-            '<div class="muted">No activity found to render a heatmap.</div>';
-        }
-      };
-    }
+    const topRepos = repos
+      .filter((r) => !r.fork)
+      .sort((a, b) => b.stargazers_count - a.stargazers_count)
+      .slice(0, 8);
 
-    // Cache the data
-    const dashboardData = {
+    const data = {
       user,
-      repos: top,
+      repos: topRepos,
       events: events.slice(0, 10),
-      fetchedAt: Date.now()
     };
-    GITHUB_CACHE.set(cacheKey, dashboardData);
 
-    statusMsg("Done");
+    GITHUB_CACHE.set(cacheKey, data);
+
+    // Save metrics snapshot
+    const metrics = {
+      followers: user.followers,
+      following: user.following,
+      repos: user.public_repos,
+      stars: topRepos.reduce((sum, r) => sum + r.stargazers_count, 0)
+    };
+    HISTORY_MANAGER.saveSnapshot(username, metrics);
+
+    renderDashboardData(data, username);
+    updateHistoryVisualization(username);
+    setDashboardState("success", "Dashboard loaded successfully ✅");
   } catch (e) {
-    console.error(e);
-    statusMsg(e.message || "Failed to load GitHub data", "error");
-  } finally {
-    // Re-enable submit button
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Load Dashboard';
+    // If we have an expired cache, show it as fallback
+    if (cached && cached.expired) {
+      console.warn("API failed, falling back to expired cache", e);
+      renderDashboardData(cached.data, username);
+      setDashboardState("success", "API rate limited. Showing cached data (may be outdated). ⚠️");
+      // No need to throw here, we handled it gracefully
+    } else {
+      setDashboardState(
+        "error",
+        e.message || "Failed to load GitHub data"
+      );
     }
+  } finally {
+    requestInFlight = false;
   }
 }
 
-// Helper function to fetch and cache dashboard data
+
 async function fetchAndCacheDashboard(username) {
-  const headers = {};
-  const cacheKey = `dashboard:${username}`;
-  
   try {
-    const user = await ghJson(
-      `https://api.github.com/users/${encodeURIComponent(username)}`,
-      headers
-    );
-    
-    const repos = await ghJson(
-      `https://api.github.com/users/${encodeURIComponent(
-        username
-      )}/repos?per_page=100&sort=updated`,
-      headers
-    );
-    
-    const top = [...repos]
+    const user = await ghJson(`https://api.github.com/users/${username}`);
+    const repos = await ghJson(`https://api.github.com/users/${username}/repos?per_page=100`);
+    const events = await ghJson(`https://api.github.com/users/${username}/events/public?per_page=25`);
+
+    const topRepos = repos
       .filter((r) => !r.fork)
-      .sort((a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0))
+      .sort((a, b) => b.stargazers_count - a.stargazers_count)
       .slice(0, 8);
-    
-    const events = await ghJson(
-      `https://api.github.com/users/${encodeURIComponent(
-        username
-      )}/events/public?per_page=25`,
-      headers
-    );
-    
-    const dashboardData = {
-      user,
-      repos: top,
-      events: events.slice(0, 10),
-      fetchedAt: Date.now()
+
+    const data = { user, repos: topRepos, events: events.slice(0, 10) };
+    GITHUB_CACHE.set(`dashboard:${username}`, data);
+
+    // Save metrics snapshot during background refresh
+    const metrics = {
+      followers: user.followers,
+      following: user.following,
+      repos: user.public_repos,
+      stars: topRepos.reduce((sum, r) => sum + r.stargazers_count, 0)
     };
-    
-    GITHUB_CACHE.set(cacheKey, dashboardData);
-    renderDashboardData(dashboardData, username);
-    
-    const status = document.getElementById("github-status");
-    if (status) {
-      status.textContent = "Updated with fresh data";
-      status.style.color = "#059669";
+    HISTORY_MANAGER.saveSnapshot(username, metrics);
+
+    // Update visualization if this is the current user
+    const currentUsername = document.getElementById("gh-username")?.value.trim();
+    if (currentUsername === username) {
+      updateHistoryVisualization(username);
     }
   } catch (e) {
-    console.warn("Background fetch failed:", e);
+    console.warn("Background refresh failed:", e);
   }
+}
+
+// ---------------- HISTORY VISUALIZATION ----------------
+function updateHistoryVisualization(username) {
+  const history = HISTORY_MANAGER.getHistory(username);
+  const current = history[0];
+  const previous = history[1] || null;
+
+  renderMetricsTrends(current, previous);
+  renderHistoryChart(history);
+  renderSnapshotList(history);
+}
+
+function renderMetricsTrends(current, previous) {
+  const container = document.getElementById("metrics-trends");
+  if (!container) return;
+
+  if (!current) {
+    container.innerHTML = '<div class="muted">Load a dashboard to see trends</div>';
+    return;
+  }
+
+  const metrics = [
+    { label: "Followers", key: "followers" },
+    { label: "Following", key: "following" },
+    { label: "Repositories", key: "repos" },
+    { label: "Total Stars", key: "stars" }
+  ];
+
+  container.innerHTML = metrics.map(metric => {
+    const currentVal = current[metric.key] || 0;
+    const previousVal = previous ? (previous[metric.key] || 0) : currentVal;
+    const change = currentVal - previousVal;
+
+    let trendClass = "neutral";
+    let trendIcon = "—";
+    let trendText = "No change";
+
+    if (change > 0) {
+      trendClass = "up";
+      trendIcon = "▲";
+      trendText = `+${change}`;
+    } else if (change < 0) {
+      trendClass = "down";
+      trendIcon = "▼";
+      trendText = `${change}`;
+    }
+
+    return `
+      <div class="metric-item">
+        <div class="metric-label">${metric.label}</div>
+        <div class="metric-value-container">
+          <div class="metric-current">${currentVal}</div>
+          ${previous ? `<div class="metric-trend ${trendClass}">${trendIcon} ${trendText}</div>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderHistoryChart(history) {
+  const canvas = document.getElementById("history-chart");
+  if (!canvas) return;
+
+  // Destroy previous chart
+  if (historyChart) {
+    historyChart.destroy();
+  }
+
+  if (history.length === 0) {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No data to display', canvas.width / 2, canvas.height / 2);
+    return;
+  }
+
+  const sortedHistory = [...history].reverse();
+  const labels = sortedHistory.map(s => {
+    const date = new Date(s.timestamp);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  });
+
+  const ctx = canvas.getContext('2d');
+  historyChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Followers',
+          data: sortedHistory.map(s => s.followers || 0),
+          borderColor: 'rgb(99, 102, 241)',
+          backgroundColor: 'rgba(99, 102, 241, 0.1)',
+          tension: 0.4
+        },
+        {
+          label: 'Repos',
+          data: sortedHistory.map(s => s.repos || 0),
+          borderColor: 'rgb(34, 197, 94)',
+          backgroundColor: 'rgba(34, 197, 94, 0.1)',
+          tension: 0.4
+        },
+        {
+          label: 'Stars',
+          data: sortedHistory.map(s => s.stars || 0),
+          borderColor: 'rgb(251, 191, 36)',
+          backgroundColor: 'rgba(251, 191, 36, 0.1)',
+          tension: 0.4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            color: 'rgba(255, 255, 255, 0.8)',
+            font: { size: 11 }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: 'rgba(255, 255, 255, 0.6)',
+            maxRotation: 45,
+            minRotation: 45,
+            font: { size: 10 }
+          },
+          grid: { color: 'rgba(255, 255, 255, 0.1)' }
+        },
+        y: {
+          ticks: { color: 'rgba(255, 255, 255, 0.6)' },
+          grid: { color: 'rgba(255, 255, 255, 0.1)' }
+        }
+      }
+    }
+  });
+}
+
+function renderSnapshotList(history) {
+  const container = document.getElementById("snapshot-list");
+  if (!container) return;
+
+  if (history.length === 0) {
+    container.innerHTML = '<div class="muted">No snapshots yet</div>';
+    return;
+  }
+
+  container.innerHTML = history.slice(0, 10).map(snapshot => {
+    const date = new Date(snapshot.timestamp);
+    const dateStr = date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    return `
+      <div class="snapshot-item">
+        <div class="snapshot-date">${dateStr}</div>
+        <div class="snapshot-metrics">
+          <div>👥 ${snapshot.followers || 0}</div>
+          <div>📦 ${snapshot.repos || 0}</div>
+          <div>⭐ ${snapshot.stars || 0}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 // Helper function to render cached dashboard data
@@ -1066,7 +1361,7 @@ function renderDashboardData(data, username) {
     if (el) el.textContent = val;
   };
   const avatar = document.getElementById("gh-avatar");
-  
+
   // Render user profile
   if (avatar) avatar.src = data.user.avatar_url;
   set("gh-name", data.user.name || "—");
@@ -1075,13 +1370,13 @@ function renderDashboardData(data, username) {
   set("gh-followers", data.user.followers ?? 0);
   set("gh-following", data.user.following ?? 0);
   set("gh-repos-count", (data.user.public_repos ?? data.repos.length) + "");
-  
+
   // Render repos
   renderRepos(data.repos);
-  
+
   // Render activity
   renderActivity(data.events);
-  
+
   // Render contributions chart
   const setDisplay = (id, disp) => {
     const el = document.getElementById(id);
@@ -1089,12 +1384,12 @@ function renderDashboardData(data, username) {
   };
   const contribNote = document.getElementById("gh-contrib-note");
   const container = document.getElementById("gh-contrib-svg");
-  
+
   if (contribNote)
     contribNote.textContent =
       "Full-year chart via third-party (ghchart.rshah.org). If it fails, we will show an approximate heatmap.";
   setDisplay("gh-contrib-note", "block");
-  
+
   if (container) {
     container.innerHTML = '<div class="muted">Loading public contributions…</div>';
     const img = new Image();
@@ -1121,6 +1416,105 @@ function renderDashboardData(data, username) {
       }
     };
   }
+
+  // Update history visualization
+  updateHistoryVisualization(username);
+
+  // Render language stats
+  renderLanguageStats(data.repos);
+
+  // Render PR metrics
+  renderPrMetrics(data.events);
+}
+
+function renderLanguageStats(repos) {
+  const container = document.getElementById("gh-languages");
+  const list = document.getElementById("gh-language-list");
+
+  if (!container || !list) return;
+
+  if (!repos || repos.length === 0) {
+    container.style.display = "none";
+    return;
+  }
+
+  const counts = {};
+  let total = 0;
+
+  repos.forEach(repo => {
+    if (repo.language) {
+      counts[repo.language] = (counts[repo.language] || 0) + 1;
+      total++;
+    }
+  });
+
+  if (total === 0) {
+    container.style.display = "none";
+    return;
+  }
+
+  // Sort by count desc
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+  list.innerHTML = sorted.map(([lang, count]) => {
+    const pct = Math.round((count / total) * 100);
+    return `
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.9rem;">
+                <div style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                    <span style="min-width: 80px;">${lang}</span>
+                    <div style="flex-grow: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                        <div style="width: ${pct}%; height: 100%; background: #6366f1; border-radius: 3px;"></div>
+                    </div>
+                    <span style="font-size: 0.8rem; opacity: 0.7; min-width: 30px; text-align: right;">${pct}%</span>
+                </div>
+            </div>
+        `;
+  }).join('');
+
+  container.style.display = "block";
+}
+
+function renderPrMetrics(events) {
+  const container = document.getElementById("gh-pr-metrics");
+  const openedEl = document.getElementById("pr-opened");
+  const mergedEl = document.getElementById("pr-merged");
+  const closedEl = document.getElementById("pr-closed");
+
+  if (!container || !openedEl || !mergedEl || !closedEl) return;
+
+  let opened = 0;
+  let merged = 0;
+  let closed = 0;
+
+  if (events && events.length > 0) {
+    events.forEach(ev => {
+      if (ev.type === "PullRequestEvent") {
+        const action = ev.payload.action;
+        const pr = ev.payload.pull_request;
+
+        if (action === "opened") {
+          opened++;
+        } else if (action === "closed") {
+          if (pr && pr.merged) {
+            merged++;
+          } else {
+            closed++;
+          }
+        }
+      }
+    });
+  }
+
+  // Only show if there is some activity
+  if (opened === 0 && merged === 0 && closed === 0) {
+    container.style.display = "none";
+    return;
+  }
+
+  openedEl.textContent = opened;
+  mergedEl.textContent = merged;
+  closedEl.textContent = closed;
+  container.style.display = "block";
 }
 
 async function ghJson(url, headers = {}) {
@@ -1131,24 +1525,52 @@ async function ghJson(url, headers = {}) {
       ...headers,
     },
   });
-  
+
+  // Extract Rate Limit Headers
+  const limit = res.headers.get("X-RateLimit-Limit");
+  const remaining = res.headers.get("X-RateLimit-Remaining");
+
+  if (limit && remaining) {
+    updateRateLimitUI(remaining, limit);
+  }
+
   // Check for rate limiting
   if (res.status === 403 || res.status === 429) {
     const resetTime = res.headers.get('X-RateLimit-Reset');
-    const remaining = res.headers.get('X-RateLimit-Remaining');
-    
-    if (remaining === '0' || res.status === 429) {
+    const remainingVal = res.headers.get('X-RateLimit-Remaining');
+
+    if (remainingVal === '0' || res.status === 429) {
       const resetDate = resetTime ? new Date(parseInt(resetTime) * 1000) : null;
       const waitTime = resetDate ? Math.ceil((resetDate - Date.now()) / 60000) : 'unknown';
       throw new Error(`⚠️ GitHub API rate limit exceeded. Please try again in ${waitTime} minutes.`);
     }
   }
-  
+
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`GitHub API ${res.status}: ${text}`);
   }
   return res.json();
+}
+
+function updateRateLimitUI(remaining, limit) {
+  const badge = document.getElementById("gh-rate-limit-badge");
+  const remEl = document.getElementById("gh-rate-remaining");
+  const limEl = document.getElementById("gh-rate-limit");
+
+  if (badge && remEl && limEl) {
+    badge.style.display = "inline-block";
+    remEl.textContent = remaining;
+    limEl.textContent = limit;
+
+    if (parseInt(remaining) < 5) {
+      badge.style.background = "rgba(239, 68, 68, 0.15)";
+      badge.style.color = "#ef4444";
+    } else {
+      badge.style.background = "rgba(99, 102, 241, 0.1)";
+      badge.style.color = "#6366f1";
+    }
+  }
 }
 
 function renderRepos(repos) {
@@ -1168,22 +1590,17 @@ function renderRepos(repos) {
 
       return `
         <div class="repo-item">
-            <div class="repo-name"><a href="${r.html_url
-        }" target="_blank" rel="noopener" onclick='trackRepoView(${safeRepo})'>${escapeHtml(
-          r.full_name
-        )}</a></div>
-            ${r.description
-          ? `<div class="repo-desc">${escapeHtml(r.description)}</div>`
-          : ""
-        }
+            <div class="repo-name"><a href="${r.html_url}" target="_blank" rel="noopener" onclick='trackRepoView(${safeRepo})'>${escapeHtml(r.full_name)}</a></div>
+            ${r.description ? `<div class="repo-desc">${escapeHtml(r.description)}</div>` : ""}
             <div class="repo-meta">
                 <span>★ ${r.stargazers_count || 0}</span>
                 <span>⑂ ${r.forks_count || 0}</span>
                 ${r.language ? `<span>${r.language}</span>` : ""}
                 <span>Updated ${timeAgo(r.updated_at)}</span>
+                <span><a href="health.html?repo=${r.full_name}" style="text-decoration:none; color:inherit;" title="Check Sustainability">🩺 Health</a></span>
             </div>
         </div>
-    `
+    `;
     })
     .join("");
 }
@@ -1192,8 +1609,7 @@ function renderActivity(events) {
   const list = document.getElementById("gh-activity-list");
   if (!list) return;
   if (!events || events.length === 0) {
-    list.innerHTML =
-      '<li class="activity-item muted">No recent public activity.</li>';
+    list.innerHTML = '<li class="activity-item muted">No recent public activity.</li>';
     return;
   }
   list.innerHTML = events
@@ -1202,12 +1618,7 @@ function renderActivity(events) {
       const repo = ev.repo?.name || "";
       const when = timeAgo(ev.created_at);
       const what = describeEvent(ev);
-      return `<li class="activity-item"><div>${escapeHtml(what || type)}${repo
-        ? ` in <a href="https://github.com/${repo}" target="_blank" rel="noopener">${escapeHtml(
-          repo
-        )}</a>`
-        : ""
-        }</div><div class="activity-time">${when}</div></li>`;
+      return `<li class="activity-item"><div>${escapeHtml(what || type)}${repo ? ` in <a href="https://github.com/${repo}" target="_blank" rel="noopener">${escapeHtml(repo)}</a>` : ""}</div><div class="activity-time">${when}</div></li>`;
     })
     .join("");
 }
@@ -1217,8 +1628,7 @@ function describeEvent(ev) {
     case "PushEvent":
       return `Pushed ${ev.payload?.commits?.length || 0} commit(s)`;
     case "CreateEvent":
-      return `Created ${ev.payload?.ref_type || "item"} ${ev.payload?.ref || ""
-        }`;
+      return `Created ${ev.payload?.ref_type || "item"} ${ev.payload?.ref || ""}`;
     case "IssuesEvent":
       return `Issue ${ev.payload?.action} #${ev.payload?.issue?.number}`;
     case "PullRequestEvent":
@@ -1253,10 +1663,7 @@ function escapeHtml(str) {
   if (str == null) return "";
   return String(str).replace(
     /[&<>"']/g,
-    (s) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[
-      s
-    ])
+    (s) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[s])
   );
 }
 
@@ -1287,12 +1694,9 @@ async function fetchContributionSvg(username, token) {
   if (!res.ok || json.errors) {
     throw new Error(json.errors?.[0]?.message || `GraphQL error ${res.status}`);
   }
-  // Build a simple SVG calendar from the data (compact)
   const cal = json.data.user.contributionsCollection.contributionCalendar;
-  const cell = 10,
-    gap = 2;
-  const rows = 7,
-    cols = cal.weeks.length;
+  const cell = 10, gap = 2;
+  const rows = 7, cols = cal.weeks.length;
   const width = cols * (cell + gap) + gap;
   const height = rows * (cell + gap) + gap + 20;
   let rects = "";
@@ -1300,41 +1704,29 @@ async function fetchContributionSvg(username, token) {
     w.contributionDays.forEach((d, y) => {
       const cx = gap + x * (cell + gap);
       const cy = gap + y * (cell + gap);
-      rects += `<rect x="${cx}" y="${cy}" width="${cell}" height="${cell}" rx="2" ry="2" fill="${d.color || "#ebedf0"
-        }">
-                <title>${d.date}: ${d.contributionCount} contributions</title>
-            </rect>`;
+      rects += `<rect x="${cx}" y="${cy}" width="${cell}" height="${cell}" rx="2" ry="2" fill="${d.color || "#ebedf0"}"><title>${d.date}: ${d.contributionCount} contributions</title></rect>`;
     });
   });
-  const label = `<text x="${gap}" y="${height - 4
-    }" font-size="10" fill="#666">Total: ${cal.totalContributions}</text>`;
+  const label = `<text x="${gap}" y="${height - 4}" font-size="10" fill="#666">Total: ${cal.totalContributions}</text>`;
   return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" role="img">${rects}${label}</svg>`;
 }
 
-// Build an approximate heatmap from public events (tokenless fallback)
 function renderEventHeatmap(events) {
   if (!Array.isArray(events) || events.length === 0)
     return '<div class="muted">No recent public activity.</div>';
 
-  // Count events per day for the past ~90 days (limited by API)
   const today = new Date();
   const daysBack = 90;
   const start = new Date(today.getTime() - daysBack * 24 * 3600 * 1000);
 
-  // Normalize to midnight UTC for consistency
-  const toKey = (d) =>
-    new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
-      .toISOString()
-      .slice(0, 10);
+  const toKey = (d) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())).toISOString().slice(0, 10);
   const counts = new Map();
 
-  // Seed zero counts for all days in range
   for (let i = 0; i <= daysBack; i++) {
     const d = new Date(start.getTime() + i * 24 * 3600 * 1000);
     counts.set(toKey(new Date(d.toISOString())), 0);
   }
 
-  // Tally events by created_at date
   for (const ev of events) {
     if (!ev.created_at) continue;
     const d = new Date(ev.created_at);
@@ -1343,16 +1735,12 @@ function renderEventHeatmap(events) {
     counts.set(k, (counts.get(k) || 0) + 1);
   }
 
-  // Prepare grid data by weeks (columns) and weekdays (rows)
-  const cell = 10,
-    gap = 2;
+  const cell = 10, gap = 2;
   const dates = Array.from(counts.keys()).sort();
-  if (dates.length === 0)
-    return '<div class="muted">No recent public activity.</div>';
+  if (dates.length === 0) return '<div class="muted">No recent public activity.</div>';
 
-  // Align start to Sunday for calendar style
   const firstDate = new Date(dates[0] + "T00:00:00Z");
-  const offset = firstDate.getUTCDay(); // 0=Sun
+  const offset = firstDate.getUTCDay();
   const totalDays = dates.length + offset;
   const cols = Math.ceil(totalDays / 7);
 
@@ -1369,7 +1757,6 @@ function renderEventHeatmap(events) {
   const height = 7 * (cell + gap) + gap + 20;
   let rects = "";
 
-  // Iterate by column/week
   for (let x = 0; x < cols; x++) {
     for (let y = 0; y < 7; y++) {
       const dayIndex = x * 7 + y - offset;
@@ -1378,15 +1765,10 @@ function renderEventHeatmap(events) {
       const v = counts.get(d) || 0;
       const cx = gap + x * (cell + gap);
       const cy = gap + y * (cell + gap);
-      rects += `<rect x="${cx}" y="${cy}" width="${cell}" height="${cell}" rx="2" ry="2" fill="${colorFor(
-        v
-      )}">
-                <title>${d}: ${v} event(s)</title>
-            </rect>`;
+      rects += `<rect x="${cx}" y="${cy}" width="${cell}" height="${cell}" rx="2" ry="2" fill="${colorFor(v)}"><title>${d}: ${v} event(s)</title></rect>`;
     }
   }
-  const label = `<text x="${gap}" y="${height - 4
-    }" font-size="10" fill="#666">Approx. last ${daysBack} days</text>`;
+  const label = `<text x="${gap}" y="${height - 4}" font-size="10" fill="#666">Approx. last ${daysBack} days</text>`;
   return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" role="img">${rects}${label}</svg>`;
 }
 
@@ -1394,7 +1776,6 @@ function renderEventHeatmap(events) {
 function initMiniViewer() {
   const canvas = document.getElementById("mini-3d-canvas");
   if (!canvas) return;
-  // If libs missing, show a friendly message instead of hanging
   if (typeof THREE === "undefined" || !THREE.GLTFLoader) {
     const loadingEl = canvas.parentElement?.querySelector(".mini-3d-loading");
     if (loadingEl) loadingEl.textContent = "3D unavailable";
@@ -1404,37 +1785,37 @@ function initMiniViewer() {
   const container = canvas.parentElement;
   const loadingEl = container?.querySelector(".mini-3d-loading");
 
-  const renderer = new THREE.WebGLRenderer({
+  const miniRenderer = new THREE.WebGLRenderer({
     canvas,
     antialias: true,
     alpha: true,
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setClearColor(0x000000, 0); // transparent
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-  camera.position.set(2.2, 1.8, 2.2);
-  camera.lookAt(0, 0, 0);
+  miniRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  miniRenderer.setClearColor(0x000000, 0);
+  const miniScene = new THREE.Scene();
+  const miniCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+  miniCamera.position.set(2.2, 1.8, 2.2);
+  miniCamera.lookAt(0, 0, 0);
 
   // size helper
   function resize() {
     const w = container.clientWidth;
     const h = container.clientHeight;
-    renderer.setSize(w, h);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
+    miniRenderer.setSize(w, h);
+    miniCamera.aspect = w / h;
+    miniCamera.updateProjectionMatrix();
   }
   resize();
   window.addEventListener("resize", resize);
 
   // Lighting
-  scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+  miniScene.add(new THREE.AmbientLight(0xffffff, 0.9));
   const dir = new THREE.DirectionalLight(0xffffff, 1.0);
   dir.position.set(3, 5, 2);
-  scene.add(dir);
+  miniScene.add(dir);
   const fill = new THREE.DirectionalLight(0x88aaff, 0.5);
   fill.position.set(-2, 1, -2);
-  scene.add(fill);
+  miniScene.add(fill);
 
   // Load model
   const loader = new THREE.GLTFLoader();
@@ -1448,8 +1829,7 @@ function initMiniViewer() {
       model.traverse((child) => {
         if (child.isMesh) {
           const m = child.material;
-          const needsReplace =
-            !m || (m.transparent && (m.opacity == null || m.opacity < 0.2));
+          const needsReplace = !m || (m.transparent && (m.opacity == null || m.opacity < 0.2));
           if (needsReplace) {
             child.material = new THREE.MeshStandardMaterial({
               color: 0xffffff,

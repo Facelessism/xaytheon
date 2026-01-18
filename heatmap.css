@@ -1,0 +1,201 @@
+.heatmap-container {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.heatmap-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 30px;
+}
+
+.page-title {
+    font-size: 2.5rem;
+    font-family: 'Eightgon', sans-serif;
+    margin-bottom: 5px;
+    background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.page-subtitle {
+    color: var(--text-muted);
+}
+
+.actions {
+    display: flex;
+    gap: 15px;
+}
+
+.filter-select {
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+}
+
+/* Visualization Section */
+.vis-section {
+    margin-bottom: 40px;
+}
+
+.heatmap-card {
+    padding: 25px;
+    overflow-x: auto;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+}
+
+.svg-container {
+    min-width: 800px;
+    /* Ensure scrolling on small screens */
+    margin-bottom: 15px;
+}
+
+.heatmap-legend {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.legend-colors {
+    display: flex;
+    list-style: none;
+    gap: 3px;
+    padding: 0;
+    margin: 0;
+}
+
+.legend-colors li {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+}
+
+/* Default Colors (overridden by JS theme) */
+.legend-colors .color-0 {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.legend-colors .color-1 {
+    background: rgba(16, 185, 129, 0.2);
+}
+
+.legend-colors .color-2 {
+    background: rgba(16, 185, 129, 0.4);
+}
+
+.legend-colors .color-3 {
+    background: rgba(16, 185, 129, 0.7);
+}
+
+.legend-colors .color-4 {
+    background: rgba(16, 185, 129, 1);
+}
+
+/* Insights Grid */
+.insights-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+}
+
+@media (max-width: 900px) {
+    .insights-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.insight-card {
+    padding: 25px;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    background: var(--card-bg);
+}
+
+.insight-card h3 {
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.insight-content {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 10px;
+}
+
+.stat-row:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.stat-value {
+    font-weight: 600;
+    font-family: monospace;
+}
+
+.stat-value.big {
+    font-size: 1.4rem;
+    color: var(--accent-color);
+}
+
+.insight-tip {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-style: italic;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+/* Theme Selector */
+.theme-options {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.theme-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.theme-btn:hover {
+    transform: scale(1.1);
+}
+
+.theme-btn.active {
+    border-color: white;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Builder — XAYTHEON</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="builder.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.4/dist/umd/supabase.min.js"></script>
+    <script defer src="auth.js"></script>
+</head>
+
+<body class="eightgon-page">
+    <div class="page-wrapper">
+        <nav class="navbar">
+            <div class="nav-container">
+                <a class="logo" href="index.html">
+                    <img class="logo-img" src="assets/logo/thelogo.png" alt="XAYTHEON logo">
+                </a>
+                <ul class="nav-menu">
+                    <li><a class="nav-link" href="index.html#home">Home</a></li>
+                    <li><a class="nav-link" href="github.html">Dashboard</a></li>
+                    <li><a class="nav-link" href="ai-chat.html">AI Assistant</a></li>
+                    <li><a class="nav-link active" href="workflow-builder.html">Workflow Builder</a></li>
+                    <li><a class="nav-link" href="compare.html">Compare</a></li>
+                    <li><a class="nav-link" href="sentiment.html">Sentiment</a></li>
+                    <li><a class="nav-link" href="heatmap.html">Heatmap</a></li>
+                    <li id="theme-toggle-li">
+                        <button class="theme-toggle" id="theme-toggle">
+                            <i class="ri-sun-line"></i>
+                        </button>
+                    </li>
+                    <li id="auth-area"></li>
+                </ul>
+            </div>
+        </nav>
+
+        <main class="builder-container">
+            <header class="builder-header">
+                <div>
+                    <h1 class="page-title">Actions Visual Builder</h1>
+                    <p class="page-subtitle">Design your CI/CD pipelines without writing YAML.</p>
+                </div>
+                <div class="header-actions">
+                    <button id="export-yaml-btn" class="btn btn-outline">
+                        <i class="ri-file-code-line"></i> Export YAML
+                    </button>
+                    <button id="save-workflow-btn" class="btn btn-primary">
+                        <i class="ri-save-line"></i> Save Template
+                    </button>
+                </div>
+            </header>
+
+            <div class="builder-layout">
+                <!-- Sidebar: Step Library -->
+                <aside class="step-library">
+                    <h3>Step Library</h3>
+                    <div class="library-search">
+                        <input type="text" placeholder="Search steps...">
+                    </div>
+                    <div class="steps-list">
+                        <div class="step-category">
+                            <h4>Standard</h4>
+                            <div class="draggable-step" draggable="true" data-type="uses"
+                                data-uses="actions/checkout@v4" data-name="Checkout Code">
+                                <i class="ri-git-branch-line"></i> Checkout Code
+                            </div>
+                            <div class="draggable-step" draggable="true" data-type="run" data-name="Run Shell Script">
+                                <i class="ri-terminal-box-line"></i> Shell Command
+                            </div>
+                        </div>
+                        <div class="step-category">
+                            <h4>Build & Test</h4>
+                            <div class="draggable-step" draggable="true" data-type="uses"
+                                data-uses="actions/setup-node@v4" data-name="Setup Node.js">
+                                <i class="ri-nodejs-line"></i> Setup Node.js
+                            </div>
+                            <div class="draggable-step" draggable="true" data-type="uses"
+                                data-uses="actions/setup-python@v5" data-name="Setup Python">
+                                <i class="ri-python-line"></i> Setup Python
+                            </div>
+                            <div class="draggable-step" draggable="true" data-type="run" data-name="Install Deps"
+                                data-run="npm ci">
+                                <i class="ri-install-line"></i> Install Deps
+                            </div>
+                            <div class="draggable-step" draggable="true" data-type="run" data-name="Run Tests"
+                                data-run="npm test">
+                                <i class="ri-test-tube-line"></i> Run Tests
+                            </div>
+                        </div>
+                        <div class="step-category">
+                            <h4>Deployment</h4>
+                            <div class="draggable-step" draggable="true" data-type="uses"
+                                data-uses="JamesIves/github-pages-deploy-action@v4" data-name="GitHub Pages">
+                                <i class="ri-pages-line"></i> GH Pages
+                            </div>
+                            <div class="draggable-step" draggable="true" data-type="uses"
+                                data-uses="vercel/gh-actions@v0.1.0" data-name="Vercel Deploy">
+                                <i class="ri-cloud-line"></i> Vercel
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Main Canvas -->
+                <section class="canvas-area">
+                    <div class="canvas-toolbar">
+                        <div class="workflow-meta">
+                            <input type="text" id="workflow-name" value="main.yml" placeholder="Workflow name">
+                            <select id="trigger-select">
+                                <option value="push">Trigger: on Push</option>
+                                <option value="pull_request">Trigger: on Pull Request</option>
+                                <option value="schedule">Trigger: Schedule</option>
+                            </select>
+                        </div>
+                        <div id="validation-pill" class="pill valid">Valid</div>
+                    </div>
+
+                    <div id="workflow-canvas" class="workflow-canvas">
+                        <div class="canvas-placeholder" id="canvas-placeholder">
+                            <i class="ri-drag-drop-line"></i>
+                            <p>Drag steps here to start building your workflow</p>
+                        </div>
+                        <!-- Steps will be injected here -->
+                    </div>
+                </section>
+
+                <!-- Sidebar: Live Preview -->
+                <aside class="code-preview-area">
+                    <div class="preview-header">
+                        <h3>YAML Preview</h3>
+                        <button id="copy-yaml" class="icon-btn" title="Copy to clipboard"><i
+                                class="ri-file-copy-line"></i></button>
+                    </div>
+                    <pre id="yaml-preview"><code># Your YAML will appear here...</code></pre>
+                </aside>
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit Step Modal -->
+    <div id="edit-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Edit Step</h3>
+            <div class="form-group">
+                <label>Step Name</label>
+                <input type="text" id="edit-step-name">
+            </div>
+            <div id="uses-field" class="form-group">
+                <label>Uses</label>
+                <input type="text" id="edit-step-uses">
+            </div>
+            <div id="run-field" class="form-group">
+                <label>Run</label>
+                <textarea id="edit-step-run"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button id="cancel-edit" class="btn btn-outline">Cancel</button>
+                <button id="save-edit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="builder.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

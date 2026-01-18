@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sentiment Analysis Dashboard — XAYTHEON</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="sentiment.css" />
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
+
+    <!-- Supabase SDK & Auth -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.4/dist/umd/supabase.min.js"></script>
+    <script defer src="auth.js"></script>
+    <script defer src="i18n.js"></script>
+
+    <!-- Chart.js & html2canvas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+
+<body class="eightgon-page">
+    <div class="page-wrapper">
+        <nav class="navbar">
+            <div class="nav-container">
+                <a class="logo" href="index.html" aria-label="Back to Home">
+                    <img class="logo-img" src="assets/logo/thelogo.png" alt="XAYTHEON logo" />
+                </a>
+                <ul class="nav-menu">
+                    <li><a class="nav-link" href="index.html#home">Home</a></li>
+                    <li><a class="nav-link" href="github.html">GitHub Dashboard</a></li>
+                    <li><a class="nav-link" href="analytics.html">Analytics</a></li>
+                    <li><a class="nav-link" href="ai-chat.html">AI Assistant</a></li>
+                    <li><a class="nav-link" href="heatmap.html">Activity Map</a></li>
+                    <li><a class="nav-link active" href="sentiment.html">Sentiment</a></li>
+                    <li><a class="nav-link" href="workflow-builder.html">Workflow Builder</a></li>
+                    <li><a class="nav-link" href="watchlist.html">Watchlist</a></li>
+                    <li><a class="nav-link" href="compare.html">Compare</a></li>
+                    <li><a class="nav-link" href="achievements.html">Achievements</a></li>
+                    <li><a class="nav-link" href="community.html">Community</a></li>
+                    <li><a class="nav-link" href="explore.html">Explore</a></li>
+                    <li><a class="nav-link" href="contributions.html">Contributions</a></li>
+                    <li>
+                        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+                            <svg class="theme-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="5" />
+                                <line x1="12" y1="1" x2="12" y2="3" />
+                                <line x1="12" y1="21" x2="12" y2="23" />
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                                <line x1="1" y1="12" x2="3" y2="12" />
+                                <line x1="21" y1="12" x2="23" y2="12" />
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                            </svg>
+                        </button>
+                    </li>
+                    <li id="auth-area"></li>
+                </ul>
+            </div>
+        </nav>
+
+        <main class="sentiment-container">
+            <header class="sentiment-header">
+                <div>
+                    <h1 class="page-title">Community Sentiment</h1>
+                    <p class="page-subtitle">Analyze community health, emotional tone, and contributor interactions</p>
+                </div>
+                <div class="actions">
+                    <div class="search-box">
+                        <i class="ri-github-line"></i>
+                        <input type="text" id="repo-input" placeholder="owner/repo" value="xaytheon/core">
+                    </div>
+                    <button id="analyze-btn" class="btn btn-primary">Analyze</button>
+                    <button id="export-btn" class="btn btn-outline">
+                        <i class="ri-file-pdf-line"></i> Export Report
+                    </button>
+                </div>
+            </header>
+
+            <div id="capture-area">
+                <!-- Loading State -->
+                <div id="loading-state" class="hidden">
+                    <div class="loader-content">
+                        <div class="spinner"></div>
+                        <p>Analyzing comments and discussions... 🧠</p>
+                    </div>
+                </div>
+
+                <!-- Dashboard Content -->
+                <div id="dashboard-content" class="dashboard-grid">
+
+                    <!-- Cards Row -->
+                    <div class="stats-row">
+                        <div class="stat-card">
+                            <h3>Overall Tone</h3>
+                            <div class="stat-main" id="avg-sentiment">0.0</div>
+                            <div id="sentiment-label" class="val-label">Neutral</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Positive Interactions</h3>
+                            <div class="stat-main green-text" id="pos-ratio">0%</div>
+                            <p class="small-desc">of total comments</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Negative Interactions</h3>
+                            <div class="stat-main red-text" id="neg-ratio">0%</div>
+                            <p class="small-desc">of total comments</p>
+                        </div>
+                    </div>
+
+                    <!-- Main Chart -->
+                    <div class="chart-section card">
+                        <h3>Mood Over Time</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="sentimentChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Row -->
+                    <div class="bottom-row">
+                        <!-- Heated Threads -->
+                        <div class="card half-card">
+                            <h3>🔥 Heated Discussions</h3>
+                            <p class="section-desc">Threads with significantly negative sentiment.</p>
+                            <ul id="heated-list" class="heated-list">
+                                <!-- Dynamic content -->
+                            </ul>
+                        </div>
+
+                        <!-- Top Contributors -->
+                        <div class="card half-card">
+                            <h3>🏆 Positivity Champions</h3>
+                            <p class="section-desc">Contributors with the most helpful and positive interactions.</p>
+                            <table class="contributors-table">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>User</th>
+                                        <th>Avg Score</th>
+                                        <th>Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="contributors-table">
+                                    <!-- Dynamic content -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-brand">
+                        <span class="logo-text">XAYTHEON</span>
+                        <p>Empowering the next generation of innovators</p>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p>&copy; 2026 XAYTHEON. All rights reserved.</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="sentiment.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
