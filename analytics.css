@@ -475,3 +475,10 @@
 .empty-state p {
   margin: 0;
 }
+
+/* Pulse Animation for Live Indicator */
+@keyframes pulse {
+  0% { transform: scale(0.95); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.7; }
+  100% { transform: scale(0.95); opacity: 1; }
+}

@@ -11,13 +11,21 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="analytics.css" />
   <link rel="stylesheet" href="features_analytics.css" />
+  <link rel="stylesheet" href="modal-fix.css?v=1" />
+  <script src="theme.js"></script>
 
   <!-- Chart.js for data visualization -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Socket.io Client -->
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <!-- jsPDF & html2canvas for PDF Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <!-- Supabase SDK & auth bootstrap -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.4/dist/umd/supabase.min.js"></script>
   <script defer src="auth.js"></script>
+  <script defer src="i18n.js"></script>
 </head>
 
 <body class="eightgon-page">
@@ -37,12 +45,13 @@
           <li><a class="nav-link" href="sentiment.html">Sentiment</a></li>
           <li><a class="nav-link" href="workflow-builder.html">Workflow Builder</a></li>
           <li><a class="nav-link" href="dependency-graph.html">Dep Graph</a></li>
-          <li><a class="nav-link" href="watchlist.html">Watchlist</a></li>
+          <li><a class="nav-link" href="watchlist.html" data-i18n="nav.watchlist">Watchlist</a></li>
           <li><a class="nav-link" href="compare.html">Compare</a></li>
           <li><a class="nav-link" href="achievements.html">Achievements</a></li>
-          <li><a class="nav-link" href="community.html">Community Highlights</a></li>
-          <li><a class="nav-link" href="explore.html">Explore by Topic</a></li>
-          <li><a class="nav-link" href="contributions.html">Contributions</a></li>
+          <li><a class="nav-link" href="community.html" data-i18n="nav.community">Community Highlights</a></li>
+          <li><a class="nav-link" href="health.html">Health Auditor</a></li>
+          <li><a class="nav-link" href="explore.html" data-i18n="nav.explore">Explore by Topic</a></li>
+          <li><a class="nav-link" href="contributions.html" data-i18n="nav.contributions">Contributions</a></li>
           <li>
             <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
               <svg class="theme-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
@@ -71,8 +80,9 @@
           <!-- Header -->
           <div class="analytics-header">
             <div>
-              <h1 class="section-title">📊 Advanced Analytics Dashboard</h1>
-              <p class="section-subtitle">Track your GitHub growth over time with interactive visualizations</p>
+              <h1 class="section-title" data-i18n="analytics.title">📊 Advanced Analytics Dashboard</h1>
+              <p class="section-subtitle" data-i18n="analytics.subtitle">Track your GitHub growth over time with
+                interactive visualizations</p>
             </div>
             <div class="header-actions">
               <div id="connection-status" class="connection-status hidden">
@@ -82,6 +92,12 @@
               <div class="last-updated" id="last-updated-info"
                 style="display: none; font-size: 0.85rem; color: var(--text-muted); margin-right: 1rem;">
                 Last updated: <span id="last-updated-time">-</span>
+              </div>
+              <div id="live-indicator" class="live-indicator"
+                style="display: none; align-items: center; gap: 6px; color: var(--color-success); font-size: 0.85rem; margin-right: 1rem; font-weight: 600;">
+                <span class="live-dot"
+                  style="width: 8px; height: 8px; background-color: currentColor; border-radius: 50%; display: inline-block; animation: pulse 1.5s infinite;"></span>
+                LIVE
               </div>
               <button class="btn btn-outline" id="refresh-data-btn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -142,7 +158,7 @@
             <div class="metric-card">
               <div class="metric-icon">⭐</div>
               <div class="metric-content">
-                <div class="metric-label">Total Stars</div>
+                <div class="metric-label" data-i18n="dashboard.stats.stars">Total Stars</div>
                 <div class="metric-value" id="metric-stars">—</div>
                 <div class="metric-change" id="metric-stars-change">—</div>
               </div>
@@ -151,7 +167,7 @@
             <div class="metric-card">
               <div class="metric-icon">👥</div>
               <div class="metric-content">
-                <div class="metric-label">Followers</div>
+                <div class="metric-label" data-i18n="dashboard.stats.followers">Followers</div>
                 <div class="metric-value" id="metric-followers">—</div>
                 <div class="metric-change" id="metric-followers-change">—</div>
               </div>
@@ -169,7 +185,7 @@
             <div class="metric-card">
               <div class="metric-icon">💻</div>
               <div class="metric-content">
-                <div class="metric-label">Total Commits</div>
+                <div class="metric-label" data-i18n="dashboard.stats.commits">Total Commits</div>
                 <div class="metric-value" id="metric-commits">—</div>
                 <div class="metric-change" id="metric-commits-change">—</div>
               </div>
@@ -290,11 +306,11 @@
         <div class="footer-content">
           <div class="footer-brand">
             <span class="logo-text">XAYTHEON</span>
-            <p>Empowering the next generation of innovators</p>
+            <p data-i18n="footer.tagline">Empowering the next generation of innovators</p>
           </div>
         </div>
         <div class="footer-bottom">
-          <p>&copy; 2026 XAYTHEON. All rights reserved.</p>
+          <p data-i18n="footer.copyright">&copy; 2026 XAYTHEON. All rights reserved.</p>
         </div>
       </div>
     </footer>
@@ -337,6 +353,16 @@
               <line x1="16" y1="17" x2="8" y2="17"></line>
             </svg>
             Export as CSV
+          </button>
+          <button class="btn btn-primary export-option" data-format="pdf">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <path d="M16 13H8"></path>
+              <path d="M16 17H8"></path>
+              <path d="M10 9H8"></path>
+            </svg>
+            Export as PDF
           </button>
         </div>
       </div>

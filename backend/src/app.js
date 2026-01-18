@@ -3,6 +3,9 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
+const loadingMiddleware = require("./middleware/loading.middleware");
+const requestLock = require("./middleware/requestLock.middleware");
+
 const authRoutes = require("./routes/auth.routes");
 const userRoutes = require("./routes/user.routes");
 const watchlistRoutes = require("./routes/watchlist.routes");
@@ -22,47 +25,78 @@ const healthRoutes = require("./routes/health.routes");
 
 const app = express();
 
+/* ========================
+   CORS CONFIG
+======================== */
 const corsOptions = {
-  origin: true, // Allow all origins (simpler for local dev with varying ports)
-  credentials: true,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+
+    // Allow local development
+    if (
+      origin.startsWith("http://localhost") ||
+      origin.startsWith("http://127.0.0.1") ||
+      origin.startsWith("file://") // Re-added file support from feature/login logic
+    ) {
+      return callback(null, true);
+    }
+
+    // Allow production frontend
+    if (origin === process.env.FRONTEND_URL) {
+      return callback(null, true);
+    }
+
+    callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true, // Required for cookies and Authorization headers
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   exposedHeaders: ["Set-Cookie"],
   maxAge: 86400,
 };
 
-// Security and input validation middleware
+/* ========================
+   SECURITY HEADERS
+======================== */
 app.use((req, res, next) => {
-  // Set security headers
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("X-XSS-Protection", "1; mode=block");
+
   if (process.env.NODE_ENV === "production") {
-    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    res.setHeader(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains"
+    );
   }
 
-  // Force HTTPS in production
-  if (process.env.NODE_ENV === "production" && req.headers["x-forwarded-proto"] !== "https") {
+  if (
+    process.env.NODE_ENV === "production" &&
+    req.headers["x-forwarded-proto"] !== "https"
+  ) {
     return res.redirect(301, `https://${req.headers.host}${req.url}`);
   }
 
   next();
 });
 
-// Input validation middleware
+/* ========================
+   INPUT VALIDATION
+======================== */
 app.use((req, res, next) => {
-  // Validate Content-Type for POST/PUT/PATCH requests
-  if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
-    const contentType = req.headers['content-type'];
-    if (!contentType || !contentType.includes('application/json')) {
-      return res.status(400).json({ message: 'Content-Type must be application/json' });
+  if (["POST", "PUT", "PATCH"].includes(req.method)) {
+    const contentType = req.headers["content-type"];
+    if (!contentType || !contentType.includes("application/json")) {
+      return res
+        .status(400)
+        .json({ message: "Content-Type must be application/json" });
     }
   }
 
-  // Sanitize query parameters
   for (const key in req.query) {
-    if (typeof req.query[key] === 'string') {
-      req.query[key] = req.query[key].trim().substring(0, 1000); // Limit length
+    if (typeof req.query[key] === "string") {
+      req.query[key] = req.query[key].trim().substring(0, 1000);
     }
   }
 
@@ -71,30 +105,19 @@ app.use((req, res, next) => {
 
 app.use(cors(corsOptions));
 
-// Body parsing with size limits and error handling
-app.use(express.json({
-  limit: '10mb',
-  verify: (req, res, buf) => {
-    try {
-      JSON.parse(buf);
-    } catch (e) {
-      res.status(400).json({ message: 'Invalid JSON payload' });
-      throw new Error('Invalid JSON');
-    }
-  }
-}));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+/* ========================
+   BODY PARSING
 app.use(cookieParser());
 
-// Handle JSON parsing errors
-app.use((err, req, res, next) => {
-  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-    return res.status(400).json({ message: 'Invalid JSON payload' });
-  }
-  next(err);
-});
+/* ========================
+   GLOBAL LOADING & LOCK
+======================== */
+app.use(loadingMiddleware);
+app.use(requestLock);
 
-// test route
+/* ========================
+   ROUTES
+======================== */
 app.get("/", (req, res) => {
   res.send("Xaytheon Auth Backend is running");
 });
@@ -119,13 +142,13 @@ app.use("/api/health", healthRoutes);
 app.use((err, req, res, next) => {
   console.error("Error:", err);
 
-  // Don't leak error details in production
-  const isDevelopment = process.env.NODE_ENV !== 'production';
+  const isDev = process.env.NODE_ENV !== "production";
 
   res.status(err.status || 500).json({
     message: err.message || "Internal server error",
-    ...(isDevelopment && { stack: err.stack })
+    ...(isDev && { stack: err.stack }),
   });
 });
 
 module.exports = app;
+
