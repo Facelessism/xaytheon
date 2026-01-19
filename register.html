@@ -248,18 +248,34 @@
     }
 
     function validatePassword(password) {
-      if (typeof password !== 'string' || password.length < 8 || password.length > 128) {
-        return false;
+      if (typeof password !== "string" || password.length < 8 || password.length > 128) {
+        return "Password must be between 8 and 128 characters.";
       }
 
-      // Check for common weak passwords
-      const weakPasswords = ['password', '12345678', 'qwerty', 'abc123'];
+      if (!/[a-z]/.test(password)) {
+        return "Password must include at least one lowercase letter.";
+      }
+
+      if (!/[A-Z]/.test(password)) {
+        return "Password must include at least one uppercase letter.";
+      }
+
+      if (!/\d/.test(password)) {
+        return "Password must include at least one number.";
+      }
+
+      if (!/[@$!%*?&()[\]{}\-_=+|;:'",.<>\/\\^~`#]/.test(password)) {
+        return "Password must include at least one special character.";
+      }
+
+      const weakPasswords = ["password", "12345678", "qwerty", "abc123"];
       if (weakPasswords.includes(password.toLowerCase())) {
-        return false;
+        return "This password is too common. Please choose a stronger one.";
       }
 
       return true;
     }
+
 
     function showError(message) {
       statusEl.className = "error-msg";
@@ -319,9 +335,10 @@
         return;
       }
 
-      if (!validatePassword(password)) {
+      const passwordValidationResult = validatePassword(password);
+      if (passwordValidationResult !== true) {
         passwordEl.classList.add("input-error");
-        showError("Password must be between 8 and 128 characters");
+        showError(passwordValidationResult);
         passwordEl.focus();
         return;
       }
