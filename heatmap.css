@@ -1,20 +1,33 @@
+/* =======================
+   Heatmap Page Container
+   ======================= */
 .heatmap-container {
     max-width: 1200px;
-    margin: 40px auto;
-    padding: 0 20px;
+    margin: 0 auto;
+    padding: 150px 20px 40px; 
+    box-sizing: border-box;
 }
 
+/* =======================
+   Header
+   ======================= */
 .heatmap-header {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: flex-end;
-    margin-bottom: 30px;
+    margin-bottom: 40px;
+    gap: 20px;
+}
+
+.header-text {
+    flex: 1 1 auto;
 }
 
 .page-title {
     font-size: 2.5rem;
     font-family: 'Eightgon', sans-serif;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
     background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
     -webkit-background-clip: text;
     background-clip: text;
@@ -23,11 +36,30 @@
 
 .page-subtitle {
     color: var(--text-muted);
+    font-size: 1rem;
 }
 
+/* Actions (Export & Year Filter) */
 .actions {
     display: flex;
     gap: 15px;
+    flex-wrap: wrap;
+}
+
+.btn.btn-outline {
+    padding: 10px 20px;
+    font-size: 0.95rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+}
+
+.btn.btn-outline:hover {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
 }
 
 .filter-select {
@@ -37,73 +69,68 @@
     color: var(--text-primary);
     border: 1px solid var(--border-color);
     cursor: pointer;
+    transition: border-color 0.2s ease;
 }
 
-/* Visualization Section */
+.filter-select:hover {
+    border-color: var(--accent-color);
+}
+
+/* =======================
+   Heatmap Visualization
+   ======================= */
 .vis-section {
-    margin-bottom: 40px;
+    margin-bottom: 50px;
 }
 
 .heatmap-card {
-    padding: 25px;
+    padding: 30px;
     overflow-x: auto;
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 20px;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.heatmap-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
 }
 
 .svg-container {
-    min-width: 800px;
-    /* Ensure scrolling on small screens */
-    margin-bottom: 15px;
+    min-width: 800px; /* ensures scroll on small screens */
+    margin-bottom: 20px;
 }
 
+/* Legend */
 .heatmap-legend {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 8px;
-    font-size: 0.8rem;
+    gap: 10px;
+    font-size: 0.85rem;
     color: var(--text-muted);
 }
 
 .legend-colors {
     display: flex;
     list-style: none;
-    gap: 3px;
+    gap: 4px;
     padding: 0;
     margin: 0;
 }
 
 .legend-colors li {
-    width: 12px;
-    height: 12px;
-    border-radius: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
 }
 
-/* Default Colors (overridden by JS theme) */
-.legend-colors .color-0 {
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.legend-colors .color-1 {
-    background: rgba(16, 185, 129, 0.2);
-}
-
-.legend-colors .color-2 {
-    background: rgba(16, 185, 129, 0.4);
-}
-
-.legend-colors .color-3 {
-    background: rgba(16, 185, 129, 0.7);
-}
-
-.legend-colors .color-4 {
-    background: rgba(16, 185, 129, 1);
-}
-
-/* Insights Grid */
+/* =======================
+   Insights Grid
+   ======================= */
 .insights-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -121,11 +148,18 @@
     border: 1px solid var(--border-color);
     border-radius: 20px;
     background: var(--card-bg);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.03);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.insight-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.06);
 }
 
 .insight-card h3 {
     margin-bottom: 20px;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     color: var(--text-primary);
     display: flex;
     align-items: center;
@@ -152,7 +186,7 @@
 
 .stat-label {
     color: var(--text-muted);
-    font-size: 0.9rem;
+    font-size: 0.95rem;
 }
 
 .stat-value {
@@ -161,7 +195,7 @@
 }
 
 .stat-value.big {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     color: var(--accent-color);
 }
 
@@ -169,13 +203,15 @@
     font-size: 0.85rem;
     color: var(--text-muted);
     font-style: italic;
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.04);
     padding: 10px;
-    border-radius: 8px;
+    border-radius: 10px;
     margin-top: 10px;
 }
 
-/* Theme Selector */
+/* =======================
+   Theme Selector
+   ======================= */
 .theme-options {
     display: flex;
     gap: 10px;
@@ -183,19 +219,29 @@
 }
 
 .theme-btn {
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     border: 2px solid transparent;
     cursor: pointer;
-    transition: transform 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .theme-btn:hover {
     transform: scale(1.1);
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.15);
 }
 
 .theme-btn.active {
     border-color: white;
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
+}
+
+/* =======================
+   Responsive Fixes for Navbar Overlap
+   ======================= */
+@media (max-width: 1200px) {
+    .heatmap-container {
+        padding-top: 120px; /* Ensure navbar does not overlap */
+    }
 }

@@ -62,99 +62,141 @@
             </div>
         </nav>
 
-        <main class="heatmap-container">
-            <header class="heatmap-header">
-                <div>
-                    <h1 class="page-title">Activity Holograph</h1>
-                    <p class="page-subtitle">Visualize your coding timeline and productivity patterns</p>
-                </div>
-                <div class="actions">
-                    <button id="export-btn" class="btn btn-outline">
-                        📷 Export Image
-                    </button>
-                    <select id="year-filter" class="filter-select">
-                        <option value="2025" selected>2025</option>
-                        <option value="2024">2024</option>
-                    </select>
-                </div>
-            </header>
+       <main class="heatmap-container">
 
-            <!-- Main Visualization -->
-            <section class="vis-section" id="capture-area">
-                <div class="card heatmap-card">
-                    <div id="heatmap-svg-container" class="svg-container">
-                        <!-- SVG heatmap injected here -->
-                    </div>
-                    <div class="heatmap-legend">
-                        <span>Less</span>
-                        <ul class="legend-colors">
-                            <li class="color-0"></li>
-                            <li class="color-1"></li>
-                            <li class="color-2"></li>
-                            <li class="color-3"></li>
-                            <li class="color-4"></li>
-                        </ul>
-                        <span>More</span>
-                    </div>
-                </div>
-            </section>
+    <!-- Page Header -->
+    <header class="heatmap-header">
+        <div class="header-text">
+            <h1 class="page-title">Activity Holograph</h1>
+            <p class="page-subtitle">
+                Visualize your coding timeline and productivity patterns
+            </p>
+        </div>
 
-            <!-- Insights Grid -->
-            <section class="insights-grid">
-                <div class="card insight-card">
-                    <h3>🔥 Streaks</h3>
-                    <div class="insight-content">
-                        <div class="stat-row">
-                            <span class="stat-label">Current Streak</span>
-                            <span class="stat-value big" id="current-streak">0 days</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">Longest Streak</span>
-                            <span class="stat-value" id="longest-streak">0 days</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">Total Contributions</span>
-                            <span class="stat-value" id="total-attrib">0</span>
-                        </div>
-                    </div>
-                </div>
+        <div class="actions">
+            <button id="export-btn" class="btn btn-outline" aria-label="Export heatmap as image">
+                📷 Export Image
+            </button>
 
-                <div class="card insight-card">
-                    <h3>⚡ Productivity</h3>
-                    <div class="insight-content">
-                        <div class="stat-row">
-                            <span class="stat-label">Best Day</span>
-                            <span class="stat-value big" id="best-day">-</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">Most Productive Hour</span>
-                            <span class="stat-value" id="best-hour">-</span>
-                        </div>
-                        <p class="insight-tip" id="insight-tip">
-                            Analyze your peak hours to optimize deep work sessions.
-                        </p>
-                    </div>
+            <select id="year-filter" class="filter-select" aria-label="Select year">
+                <option value="2025" selected>2025</option>
+                <option value="2024">2024</option>
+            </select>
+        </div>
+    </header>
+
+    <!-- Heatmap Visualization -->
+    <section class="vis-section" id="capture-area" aria-labelledby="heatmap-title">
+        <div class="card heatmap-card">
+
+            <!-- SVG Container -->
+            <div
+                id="heatmap-svg-container"
+                class="svg-container"
+                role="img"
+                aria-label="Contribution heatmap"
+            >
+                <!-- SVG heatmap injected here -->
+            </div>
+
+            <!-- Legend -->
+            <div class="heatmap-legend" aria-hidden="true">
+                <span>Less</span>
+                <ul class="legend-colors">
+                    <li class="color-0"></li>
+                    <li class="color-1"></li>
+                    <li class="color-2"></li>
+                    <li class="color-3"></li>
+                    <li class="color-4"></li>
+                </ul>
+                <span>More</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Insights -->
+    <section class="insights-grid" aria-label="Activity insights">
+
+        <!-- Streaks -->
+        <article class="card insight-card">
+            <h3>🔥 Streaks</h3>
+
+            <div class="insight-content">
+                <div class="stat-row">
+                    <span class="stat-label">Current Streak</span>
+                    <span class="stat-value big" id="current-streak">0 days</span>
                 </div>
 
-                <div class="card insight-card" id="theme-selector-card">
-                    <h3>🎨 Theme</h3>
-                    <div class="insight-content">
-                        <div class="theme-options">
-                            <button class="theme-btn active" data-theme="default"
-                                style="background:var(--accent-color)"></button>
-                            <button class="theme-btn" data-theme="fire" style="background:#f59e0b"></button>
-                            <button class="theme-btn" data-theme="ocean" style="background:#0ea5e9"></button>
-                            <button class="theme-btn" data-theme="forest" style="background:#22c55e"></button>
-                            <button class="theme-btn" data-theme="pink" style="background:#ec4899"></button>
-                        </div>
-                        <div style="margin-top:15px; font-size: 0.9rem; color: var(--text-muted)">
-                            Select a color palette for your graph.
-                        </div>
-                    </div>
+                <div class="stat-row">
+                    <span class="stat-label">Longest Streak</span>
+                    <span class="stat-value" id="longest-streak">0 days</span>
                 </div>
-            </section>
 
-        </main>
+                <div class="stat-row">
+                    <span class="stat-label">Total Contributions</span>
+                    <span class="stat-value" id="total-attrib">0</span>
+                </div>
+            </div>
+        </article>
+
+        <!-- Productivity -->
+        <article class="card insight-card">
+            <h3>⚡ Productivity</h3>
+
+            <div class="insight-content">
+                <div class="stat-row">
+                    <span class="stat-label">Best Day</span>
+                    <span class="stat-value big" id="best-day">-</span>
+                </div>
+
+                <div class="stat-row">
+                    <span class="stat-label">Most Productive Hour</span>
+                    <span class="stat-value" id="best-hour">-</span>
+                </div>
+
+                <p class="insight-tip" id="insight-tip">
+                    Analyze your peak hours to optimize deep work sessions.
+                </p>
+            </div>
+        </article>
+
+        <!-- Theme Selector -->
+        <article class="card insight-card" id="theme-selector-card">
+            <h3>🎨 Theme</h3>
+
+            <div class="insight-content">
+                <div class="theme-options" role="group" aria-label="Heatmap color themes">
+                    <button class="theme-btn active" data-theme="default"
+                        style="background:var(--accent-color)"
+                        aria-label="Default theme"></button>
+
+                    <button class="theme-btn" data-theme="fire"
+                        style="background:#f59e0b"
+                        aria-label="Fire theme"></button>
+
+                    <button class="theme-btn" data-theme="ocean"
+                        style="background:#0ea5e9"
+                        aria-label="Ocean theme"></button>
+
+                    <button class="theme-btn" data-theme="forest"
+                        style="background:#22c55e"
+                        aria-label="Forest theme"></button>
+
+                    <button class="theme-btn" data-theme="pink"
+                        style="background:#ec4899"
+                        aria-label="Pink theme"></button>
+                </div>
+
+                <p class="theme-help">
+                    Select a color palette for your graph.
+                </p>
+            </div>
+        </article>
+
+    </section>
+
+</main>
+
 
         <footer class="footer">
         <div class="container">
