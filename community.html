@@ -61,78 +61,70 @@
     </nav>
 
     <main>
-      <section class="github-section">
-        <div class="container">
-          <h2 class="section-title" style="font-family:'Eightgon',sans-serif;" data-i18n="community.title">Community
-            Highlights</h2>
+  <section class="github-section">
+    <div class="container">
+      <h2 class="section-title" style="font-family:'Eightgon',sans-serif;" data-i18n="community.title">
+        Community Highlights
+      </h2>
 
-          <div class="card" style="grid-column: 1 / -1;">
-            <div class="card-header">
-              <h3 data-i18n="community.trending">Trending Now</h3>
+      <!-- Trending Repos Card -->
+      <div class="card trending-card">
+        <div class="card-header">
+          <h3 data-i18n="community.trending">Trending Now</h3>
+        </div>
+        <div class="card-body">
+          <!-- Form -->
+          <form id="trend-form" class="github-form" autocomplete="off">
+            <div class="form-grid">
+              <div class="field-group">
+                <label for="trend-lang">Language</label>
+                <select id="trend-lang">
+                  <option value="">Any</option>
+                  <option>JavaScript</option>
+                  <option>TypeScript</option>
+                  <option>Python</option>
+                  <option>Go</option>
+                  <option>Rust</option>
+                  <option>Java</option>
+                  <option>C#</option>
+                  <option>C++</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label for="trend-topic">Topic</label>
+                <input id="trend-topic" type="text" placeholder="e.g. threejs, vite" />
+              </div>
+              <div class="field-group">
+                <label for="trend-window">Time Window</label>
+                <select id="trend-window">
+                  <option value="30">Last 30 days</option>
+                  <option value="7">Last 7 days</option>
+                  <option value="90">Last 90 days</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label for="trend-k">Top K</label>
+                <input id="trend-k" type="number" placeholder="e.g. 10" />
+              </div>
             </div>
-            <div class="card-body">
-              <form id="trend-form" class="github-form" autocomplete="off" style="margin-bottom: 16px;">
-                <div class="field-group" style="grid-column: span 3;">
-                  <label for="trend-lang">Language</label>
-                  <select id="trend-lang">
-                    <option value="">Any</option>
-                    <option>JavaScript</option>
-                    <option>TypeScript</option>
-                    <option>Python</option>
-                    <option>Go</option>
-                    <option>Rust</option>
-                    <option>Java</option>
-                    <option>C#</option>
-                    <option>C++</option>
-                  </select>
-                </div>
-                <div class="field-group" style="grid-column: span 3;">
-                  <label for="trend-topic">Topic</label>
-                  <input id="trend-topic" type="text" placeholder="e.g. threejs, vite" />
-                </div>
-                <div class="field-group" style="grid-column: span 3;">
-                  <label for="trend-window">Time Window</label>
-                  <select id="trend-window">
-                    <option value="30">Last 30 days</option>
-                    <option value="7">Last 7 days</option>
-                    <option value="90">Last 90 days</option>
-                  </select>
-                </div>
-                <div class="field-group" style="grid-column: span 3;">
-                  <label for="trend-k">Top K</label>
-                  <input id="trend-k" type="text" inputmode="numeric" />
-
-                </div>
-                <button class="btn btn-primary" type="submit" data-i18n="common.submit">Update</button>
-                <button class="btn btn-outline" type="button" id="trend-reset"
-                  data-i18n="common.tryAgain">Reset</button>
-                <div id="trend-status" class="github-status" aria-live="polite"></div>
-                <div id="trend-cache-info" class="github-status" aria-live="polite"
-                  style="margin-top: 8px; font-size: 0.9em; color: #6b7280;"></div>
-              </form>
-
-              <div id="trend-results" class="repo-list"></div>
+            <div class="form-buttons">
+              <button class="btn btn-primary" type="submit" data-i18n="common.submit">Update</button>
+              <button class="btn btn-outline" type="button" id="trend-reset" data-i18n="common.tryAgain">Reset</button>
             </div>
+            <div id="trend-status" class="github-status" aria-live="polite"></div>
+            <div id="trend-cache-info" class="github-status" aria-live="polite"></div>
+          </form>
+
+          <!-- Results -->
+          <div id="trend-results" class="repo-list">
+            <!-- Repo cards will be injected here -->
+            <p class="placeholder-text">No trending repos yet. Use the form above to search.</p>
           </div>
         </div>
-
-  </div>
+      </div>
+    </div>
   </section>
-  <div class="cursor-container">
-    <span class="cursor-dot"></span>
-    <span class="cursor-dot"></span>
-    <span class="cursor-dot"></span>
-    <span class="cursor-dot"></span>
-    <span class="cursor-dot"></span>
-    <span class="cursor-dot"></span>
-    <span class="cursor-dot"></span>
-    <span class="cursor-dot"></span>
-  </div>
-
-
-  </section>
-  </main>
-
+</main>
 
   <footer class="footer">
     <div class="container">

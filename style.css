@@ -1131,6 +1131,100 @@ section {
   transition: all 0.3s ease;
 }
 
+.github-section {
+  padding: 40px 0;
+}
+
+.section-title {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 24px;
+}
+
+.card.trending-card {
+  background-color: var(--card-bg, #fff);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+}
+
+.github-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.field-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.field-group input,
+.field-group select {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  transition: border 0.2s;
+}
+
+.field-group input:focus,
+.field-group select:focus {
+  border-color: #3b82f6;
+  outline: none;
+}
+
+.form-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.repo-list {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.repo-card {
+  background-color: var(--card-bg, #f9f9f9);
+  padding: 16px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.repo-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+}
+
+.repo-card h4 {
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+}
+
+.repo-card p {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.placeholder-text {
+  text-align: center;
+  color: #888;
+  font-style: italic;
+}
+main {
+  padding-top: 100px; /* adjust based on navbar height + some spacing */
+}
+
 /* Enhanced project card interactions */
 .project-card {
   position: relative;
