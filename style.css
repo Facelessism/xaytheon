@@ -1491,3 +1491,6 @@ body.dark #scrollTopBtn:hover {
   /* Remove header separator if present */
   padding: 0 0 5px 0;
 }
+[data-theme="dark"] .github-status {
+  color: #e5e7eb !important;
+}
