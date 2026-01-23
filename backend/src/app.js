@@ -24,7 +24,7 @@ const dependencyRoutes = require("./routes/dependency.routes");
 const aiRoutes = require("./routes/ai.routes");
 const riskRoutes = require("./routes/risk.routes");
 const analyzerRoutes = require("./routes/analyzer.routes");
-const releaseRoutes = require("./routes/release.routes");
+const globeRoutes = require("./routes/globe.routes");
 
 const app = express();
 
@@ -151,7 +151,7 @@ app.use("/api/dependency", dependencyRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/risk", riskRoutes);
 app.use("/api/analyzer", analyzerRoutes);
-app.use("/api/release", releaseRoutes);
+app.use("/api/globe", globeRoutes);
 
 app.use((err, req, res, next) => {
   console.error("Error:", err);
