@@ -154,10 +154,7 @@ app.use("/api/dependency", dependencyRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/risk", riskRoutes);
 app.use("/api/analyzer", analyzerRoutes);
-app.use("/api/release", releaseRoutes);
-app.use("/api/war-room", warRoomRoutes);
-app.use("/api/security-fuzzer", securityFuzzerRoutes);
-app.use("/api/code-dna", codeDnaRoutes);
+app.use("/api/code-dna", codeDNARoutes);
 
 app.use((err, req, res, next) => {
   console.error("Error:", err);
