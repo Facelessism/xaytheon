@@ -337,6 +337,9 @@ function generateSampleData() {
 /**
  * Load analytics data from API
  */
+/**
+ * Load analytics data from API with client-side TTL caching
+ */
 async function loadAnalyticsData(forceRefresh = false) {
     // Check if user is authenticated
     const isAuthenticated = currentUser && window.XAYTHEON_AUTH && window.XAYTHEON_AUTH.isAuthenticated();
@@ -371,7 +374,6 @@ async function loadAnalyticsData(forceRefresh = false) {
         return;
     }
 
-
     const startDate = document.getElementById('start-date').value;
     const endDate = document.getElementById('end-date').value;
     const cacheKey = `analytics_${startDate}_${endDate}`;
@@ -381,6 +383,26 @@ async function loadAnalyticsData(forceRefresh = false) {
     if (!startDate || !endDate) {
         console.warn('Please select both start and end dates');
         return;
+    }
+
+    // --- STEP 1: TTL CACHE CHECK (Issue #225) ---
+    // If we are online and NOT forcing a refresh, check the CacheManager first
+    if (!forceRefresh && navigator.onLine) {
+        const cachedData = defaultCache.get(cacheKey); //
+        if (cachedData) {
+            console.log('✅ Using valid TTL-cached data for:', cacheKey);
+            analyticsData = cachedData;
+            
+            // Update UI immediately with cached data
+            updateMetrics();
+            renderCharts();
+            updateTable();
+
+            // Indicate the data is from the recent cache
+            lastUpdatedEl.textContent = 'Cached (Recently)';
+            lastUpdatedInfo.style.display = 'inline-block';
+            return; // Exit early to avoid redundant API request
+        }
     }
 
     try {
@@ -407,8 +429,12 @@ async function loadAnalyticsData(forceRefresh = false) {
             const data = await response.json();
             analyticsData = data.snapshots || [];
 
-            // Cache the fresh data
-            await offlineManager.saveData(cacheKey, analyticsData);
+            // --- STEP 2: UPDATE TTL CACHE (Issue #225) ---
+            // Store the fresh data in localStorage with the default 30-minute expiry
+            defaultCache.set(cacheKey, analyticsData); //
+
+            // Persistent storage for offline use
+            await offlineManager.saveData(cacheKey, analyticsData); //
 
             // Update "Last updated" text
             lastUpdatedEl.textContent = 'Just now';
@@ -420,22 +446,19 @@ async function loadAnalyticsData(forceRefresh = false) {
         }
 
     } catch (error) {
-        console.warn('Fetching unsuccessful, attempting cache...', error);
+        console.warn('Fetching unsuccessful, attempting persistent cache...', error);
 
-        // Try loading from cache
-        const cachedRecord = await offlineManager.loadData(cacheKey);
+        // Try loading from persistent OfflineManager
+        const cachedRecord = await offlineManager.loadData(cacheKey); //
 
         if (cachedRecord && cachedRecord.data) {
             analyticsData = cachedRecord.data;
 
             if (navigator.onLine) {
                 showError('Could not fetch new data. Showing cached version.');
-            } else {
-                // Determine user-friendly offline message
-                console.log('✅ Loaded data from cache');
             }
 
-            // Update "Last updated" timestamp
+            // Update timestamp based on when it was originally saved to OfflineManager
             lastUpdatedEl.textContent = offlineManager.formatTime(cachedRecord.timestamp);
             lastUpdatedInfo.style.display = 'inline-block';
 
