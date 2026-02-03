@@ -216,84 +216,45 @@ exports.getGrowthMetrics = async (req, res) => {
 };
 
 /**
- * Export analytics data
- * GET /api/analytics/export?format=json|csv&startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
+ * Export analytics data as JSON or CSV
  */
 exports.exportData = async (req, res) => {
     try {
         const userId = req.userId;
         const { format = "json", startDate, endDate } = req.query;
 
-        let snapshots;
-        if (startDate && endDate) {
-            snapshots = await analyticsModel.getSnapshotsByDateRange(
-                userId,
-                startDate,
-                endDate
-            );
-        } else {
-            snapshots = await analyticsModel.getAllSnapshots(userId);
-        }
+        let snapshots = await analyticsModel.getSnapshotsByDateRange(userId, startDate, endDate);
 
         if (format === "csv") {
-            // Convert to CSV
-            const headers = [
-                "ID",
-                "GitHub Username",
-                "Stars",
-                "Followers",
-                "Following",
-                "Public Repos",
-                "Total Commits",
-                "Contribution Count",
-                "Snapshot Date",
-            ];
-
+            const headers = ["Date", "Stars", "Followers", "Following", "Public Repos", "Total Commits"];
             const csvRows = [headers.join(",")];
 
-            snapshots.forEach((snapshot) => {
+            snapshots.forEach((s) => {
                 const row = [
-                    snapshot.id,
-                    snapshot.github_username,
-                    snapshot.stars,
-                    snapshot.followers,
-                    snapshot.following,
-                    snapshot.public_repos,
-                    snapshot.total_commits,
-                    snapshot.contribution_count,
-                    snapshot.snapshot_date,
+                    s.snapshot_date,
+                    s.stars,
+                    s.followers,
+                    s.following,
+                    s.public_repos,
+                    s.total_commits
                 ];
                 csvRows.push(row.join(","));
             });
 
-            const csvContent = csvRows.join("\n");
-
             res.setHeader("Content-Type", "text/csv");
-            res.setHeader(
-                "Content-Disposition",
-                `attachment; filename=analytics-export-${Date.now()}.csv`
-            );
-            res.send(csvContent);
-        } else {
-            // JSON format
-            res.setHeader("Content-Type", "application/json");
-            res.setHeader(
-                "Content-Disposition",
-                `attachment; filename=analytics-export-${Date.now()}.json`
-            );
-            res.json({
-                exportDate: new Date().toISOString(),
-                totalSnapshots: snapshots.length,
-                snapshots,
-            });
+            res.setHeader("Content-Disposition", `attachment; filename=analytics_${Date.now()}.csv`);
+            return res.send(csvRows.join("\n"));
         }
-    } catch (error) {
-        console.error("Error exporting data:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to export data",
-            error: error.message,
+
+        // Default to JSON
+        res.setHeader("Content-Type", "application/json");
+        res.json({
+            exportDate: new Date().toISOString(),
+            total: snapshots.length,
+            snapshots
         });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Export failed", error: error.message });
     }
 };
 

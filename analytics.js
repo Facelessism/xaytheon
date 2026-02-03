@@ -236,17 +236,19 @@ function setupEventListeners() {
         loadAnalyticsData(true);
     });
 
-    // Export button
-    document.getElementById('export-data-btn').addEventListener('click', showExportModal);
+// Export button to show modal
+document.getElementById('export-data-btn').addEventListener('click', showExportModal);
 
-    // Export modal
-    document.getElementById('close-export-modal').addEventListener('click', hideExportModal);
-    document.querySelectorAll('.export-option').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const format = e.currentTarget.dataset.format;
-            exportData(format);
-        });
+// Close modal button
+document.getElementById('close-export-modal').addEventListener('click', hideExportModal);
+
+// Export option buttons
+document.querySelectorAll('.export-option').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const format = e.currentTarget.dataset.format;
+        exportData(format);
     });
+});
 
     // Table toggle
     document.getElementById('toggle-table-btn').addEventListener('click', () => {
@@ -441,7 +443,7 @@ async function loadAnalyticsData(forceRefresh = false) {
             lastUpdatedInfo.style.display = 'inline-block';
 
         } else {
-            // Offline: fallback to cache
+            // Offline: fallback to cache 
             throw new Error('Offline');
         }
 
@@ -1309,5 +1311,55 @@ function handleRealTimeUpdate(update) {
             charts.commits.data.datasets[0].data[analyticsData.length - 1] = latest.total_commits;
             charts.commits.update('none');
         });
+    }
+}
+
+/**
+ * Show/Hide Export Modal
+ */
+function showExportModal() {
+    document.getElementById('export-modal').style.display = 'flex';
+}
+
+function hideExportModal() {
+    document.getElementById('export-modal').style.display = 'none';
+}
+
+/**
+ * Fetch and download export data
+ */
+async function exportData(format) {
+    hideExportModal();
+    const startDate = document.getElementById('start-date').value;
+    const endDate = document.getElementById('end-date').value;
+    const token = window.XAYTHEON_AUTH ? window.XAYTHEON_AUTH.getAccessToken() : null;
+
+    if (!token) {
+        showToast('Please sign in to export data', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/analytics/export?format=${format}&startDate=${startDate}&endDate=${endDate}`,
+            {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }
+        );
+
+        if (!response.ok) throw new Error('Export failed');
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `analytics-export-${Date.now()}.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        showToast(`Exported as ${format.toUpperCase()} successfully`, 'success');
+    } catch (error) {
+        console.error('Export error:', error);
+        showToast('Failed to export data', 'error');
     }
 }
