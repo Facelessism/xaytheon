@@ -24,6 +24,7 @@ const elements = {
     let workflowSteps = [];
     let editingStepId = null;
     let draggedStepId = null;
+    let previousFocusedElement = null;
 
     /* -------------------- Utilities -------------------- */
     function generateStepId() {
