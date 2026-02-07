@@ -1,0 +1,182 @@
+.forecaster-container {
+    padding: 100px 40px 40px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.page-header {
+    margin-bottom: 40px;
+}
+
+.page-header h1 {
+    font-size: 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 5px;
+    background: linear-gradient(to right, var(--text-primary), var(--accent-color));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.page-header p {
+    color: var(--text-muted);
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 25px;
+}
+
+.card {
+    min-height: 350px;
+    display: flex;
+    flex-direction: column;
+}
+
+.card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 25px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Confidence Gauge */
+.gauge-wrapper {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    margin: 0 auto 20px;
+}
+
+.gauge-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+#confidence-percent {
+    display: block;
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--accent-color);
+}
+
+.gauge-label small {
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+}
+
+.simulation-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: auto;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stat-item label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+}
+
+.stat-item span {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+/* What-If Panel */
+.simulator-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 15px;
+}
+
+.input-group input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent-color);
+}
+
+.val-display {
+    float: right;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--accent-color);
+}
+
+.simulator-results {
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    margin-top: auto;
+}
+
+#simulation-impact {
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+/* Fatigue Index */
+.fatigue-meter {
+    height: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    margin-bottom: 25px;
+    position: relative;
+    overflow: hidden;
+}
+
+.meter-fill {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(to right, #10b981, #facc15, #ef4444);
+    transition: width 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#fatigue-val {
+    position: absolute;
+    right: 0;
+    top: -25px;
+    font-size: 1.5rem;
+    font-weight: 800;
+}
+
+#fatigue-status {
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+}
+
+.recommendation-box {
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #93c5fd;
+    margin-top: auto;
+}
+
+/* Volatility Chart */
+.chart-container {
+    flex: 1;
+    min-height: 250px;
+}

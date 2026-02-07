@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Sprint Planner — XAYTHEON</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="sprint-planner.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="dark-theme">
+    <div id="header-placeholder"></div>
+
+    <main class="sprint-container">
+        <!-- Top: Plan Selector & Stats -->
+        <div class="header-section glass">
+            <div class="plan-selector">
+                <label>Parallel Universe:</label>
+                <select id="universe-select" onchange="loadUniverse()">
+                    <option value="universe_speed">Universe A: Speed Run (Risk: High)</option>
+                    <option value="universe_quality">Universe B: Quality (Risk: Low)</option>
+                </select>
+            </div>
+
+            <div class="stats-group">
+                <div class="stat">
+                    <span class="label">Completion Probability</span>
+                    <span id="stat-prob" class="value">--%</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Burnout Risk</span>
+                    <span id="stat-risk" class="value">--</span>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="autoOptimize()">
+                <i class="ri-magic-line"></i> Auto-Optimize
+            </button>
+        </div>
+
+        <div class="workspace">
+            <!-- Left: Gantt / Task Board -->
+            <div class="task-board glass">
+                <h3><i class="ri-kanban-view"></i> Sprint Backlog</h3>
+                <div id="backlog-lane" class="lane">
+                    <!-- Tasks injected here -->
+                </div>
+
+                <h3><i class="ri-team-line"></i> Team Assignments</h3>
+                <div id="team-lanes-container">
+                    <!-- Developer lanes injected here -->
+                </div>
+            </div>
+
+            <!-- Right: 3D Heatmap -->
+            <div class="visualization glass">
+                <h3><i class="ri-bar-chart-box-line"></i> Skill & Capacity Matrix</h3>
+                <div id="heatmap-viewport"></div>
+                <div class="legend">
+                    <div class="legend-item"><span class="dot green"></span> Under Capacity</div>
+                    <div class="legend-item"><span class="dot yellow"></span> Optimal</div>
+                    <div class="legend-item"><span class="dot red"></span> Overloaded</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="boilerplate/boilerplate-loader.js"></script>
+    <script src="sprint-planner.js"></script>
+</body>
+
+</html>

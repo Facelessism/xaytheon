@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprint Forecaster — XAYTHEON</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="sprint-forecaster.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+
+<body class="dark-theme">
+    <div id="header-placeholder"></div>
+
+    <main class="forecaster-container">
+        <header class="page-header">
+            <h1><i class="ri-rhythm-line"></i> Sprint Forecaster</h1>
+            <p>Monte Carlo Velocity Engine & Project Vitals</p>
+        </header>
+
+        <div class="dashboard-grid">
+            <!-- Confidence Meter -->
+            <section class="card glass confidence-card">
+                <h3>Release Confidence</h3>
+                <div class="gauge-wrapper">
+                    <canvas id="confidenceGauge"></canvas>
+                    <div class="gauge-label">
+                        <span id="confidence-percent">--</span>
+                        <small>Probability</small>
+                    </div>
+                </div>
+                <div class="simulation-stats">
+                    <div class="stat-item">
+                        <label>Avg. Outcome</label>
+                        <span id="avg-outcome">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <label>P90 Forecast</label>
+                        <span id="p90-forecast">--</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- What-If Panel -->
+            <section class="card glass what-if-panel">
+                <h3><i class="ri-magic-line"></i> "What-If" Simulator</h3>
+                <div class="simulator-inputs">
+                    <div class="input-group">
+                        <label>Added Scope (Story Points)</label>
+                        <input type="range" id="scope-adj" min="0" max="50" value="0">
+                        <span class="val-display">+<span id="scope-val">0</span></span>
+                    </div>
+                    <div class="input-group">
+                        <label>Velocity Adjustment</label>
+                        <input type="range" id="velocity-adj" min="-5" max="5" value="0">
+                        <span class="val-display"><span id="velocity-val">0</span> SP/day</span>
+                    </div>
+                </div>
+                <div class="simulator-results">
+                    <p id="simulation-impact">Adjust sliders to see impact on release date.</p>
+                </div>
+            </section>
+
+            <!-- Fatigue Index -->
+            <section class="card glass fatigue-card">
+                <h3>Team Fatigue Index</h3>
+                <div class="fatigue-meter">
+                    <div class="meter-fill" id="fatigue-fill"></div>
+                    <span id="fatigue-val">--</span>
+                </div>
+                <p id="fatigue-status">Analyzing team vitals...</p>
+                <div class="recommendation-box" id="fatigue-rec">
+                    --
+                </div>
+            </section>
+
+            <!-- Volatility Chart -->
+            <section class="card glass volatility-card">
+                <h3>Complexity Volatility Trend</h3>
+                <div class="chart-container">
+                    <canvas id="volatilityChart"></canvas>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="boilerplate/boilerplate-loader.js"></script>
+    <script src="sprint-forecaster.js"></script>
+</body>
+
+</html>

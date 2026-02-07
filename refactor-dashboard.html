@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refactor Safety Net — XAYTHEON</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="refactor-safety.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+
+<body class="dark-theme">
+    <div id="header-placeholder"></div>
+
+    <main class="refactor-container">
+
+        <div class="split-view">
+            <!-- Left: Input & Config -->
+            <div class="panel glass input-panel">
+                <div class="panel-header">
+                    <h3><i class="ri-code-s-slash-line"></i> Refactor Sandbox</h3>
+                    <div class="checkpoint-status">
+                        <span id="checkpoint-badge" class="badge hidden">Checkpoint Active</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Target File</label>
+                    <input type="text" id="target-file" value="src/services/auth.service.js"
+                        placeholder="e.g. src/utils.js">
+                </div>
+
+                <div class="form-group">
+                    <label>Proposed Code Change</label>
+                    <textarea id="code-editor" placeholder="// Type your refactored code here...">
+class AuthService {
+    async login(user) {
+        // Refactored logic...
+    }
+}
+                    </textarea>
+                </div>
+
+                <div class="action-bar">
+                    <button class="btn btn-secondary" onclick="createCheckpoint()">
+                        <i class="ri-save-3-line"></i> Checkpoint state
+                    </button>
+                    <button class="btn btn-primary" onclick="analyzeRefactor()">
+                        <i class="ri-radar-fill"></i> Analyze Impact
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right: Analysis & Safety Net -->
+            <div class="panel glass results-panel">
+
+                <!-- Confidence Meter -->
+                <div class="confidence-section">
+                    <h3>AI Confidence Score</h3>
+                    <div class="gauge-container">
+                        <canvas id="confidenceGauge"></canvas>
+                        <div class="score-display">
+                            <span id="score-val">--</span>
+                        </div>
+                    </div>
+                    <p id="safety-summary" class="summary-text">Waiting for analysis...</p>
+                </div>
+
+                <!-- Blast Radius List -->
+                <div class="blast-radius-section">
+                    <h4>💥 Blast Radius (Impacted Files)</h4>
+                    <ul id="blast-list" class="file-list">
+                        <!-- Populated by JS -->
+                        <li class="empty-state">No analysis run yet.</li>
+                    </ul>
+                </div>
+
+                <!-- Safety Tests -->
+                <div id="safety-tests-section" class="safety-tests hidden">
+                    <div class="alert-box">
+                        <i class="ri-alert-fill"></i> Warning: Low Confidence.
+                        <span>AI generated the following safety tests:</span>
+                    </div>
+                    <pre><code id="test-preview"></code></pre>
+                </div>
+
+                <!-- Emergency Rollback -->
+                <button id="rollback-btn" class="btn btn-danger full-width hidden" onclick="rollback()">
+                    <i class="ri-arrow-go-back-line"></i> EMERGENCY ROLLBACK
+                </button>
+
+            </div>
+        </div>
+
+    </main>
+
+    <script src="boilerplate/boilerplate-loader.js"></script>
+    <script src="refactor-safety.js"></script>
+</body>
+
+</html>
