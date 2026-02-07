@@ -6,39 +6,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Search — XAYTHEON</title>
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+
+    <!-- Core Styles -->
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="search.css">
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.4/dist/umd/supabase.min.js"></script>
-     <script defer src="i18n.js"></script>
 
-    <!-- Chart.js & html2canvas -->
+    <!-- Icons & Fonts -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+    <!-- JS Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.4/dist/umd/supabase.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+    <!-- Deferred Scripts -->
+    <script defer src="i18n.js"></script>
     <script defer src="auth.js"></script>
 </head>
 
 <body class="eightgon-page">
     <div class="page-wrapper">
-       <div id="header-placeholder"></div>
+        <!-- Header Placeholder -->
+        <div id="header-placeholder"></div>
 
         <main class="search-container">
+            <!-- Search Header -->
             <header class="search-header">
                 <h1 class="page-title">Semantic Repo Search</h1>
                 <p class="page-subtitle">Find projects using natural language queries powered by AI.</p>
 
+                <!-- Search Box -->
                 <div class="search-box-wrapper">
                     <div class="search-input-group">
                         <i class="ri-search-2-line search-icon"></i>
                         <input type="text" id="search-input"
-                            placeholder="e.g. 'Popular React projects with high documentation'" autocomplete="off">
-                        <button id="search-btn" class="btn btn-primary">Search</button>
+                               placeholder="e.g. 'Popular React projects with high documentation'"
+                               autocomplete="off" aria-label="Search repositories">
+                        <button id="search-btn" class="btn btn-primary" aria-label="Search">Search</button>
                     </div>
-                    <div id="autocomplete-results" class="autocomplete-panel hidden"></div>
+
+                    <!-- Autocomplete Panel -->
+                    <div id="autocomplete-results" class="autocomplete-panel hidden" role="listbox" aria-label="Search suggestions"></div>
                 </div>
 
-                <div class="search-hints">
+                <!-- Quick Hint Buttons -->
+                <div class="search-hints" aria-label="Suggested searches">
                     <span>Try:</span>
                     <button class="hint-btn">Python web frameworks</button>
                     <button class="hint-btn">Recently updated React tools</button>
@@ -46,63 +59,70 @@
                 </div>
             </header>
 
-            <div class="search-layout">
-                <!-- Filters Sidebar -->
-                <aside class="filters-sidebar card">
-                    <h3>Faceted Filters</h3>
-                    <div class="filter-group">
-                        <label>Language</label>
-                        <select id="lang-filter">
-                            <option value="">All Languages</option>
-                            <option value="JavaScript">JavaScript</option>
-                            <option value="TypeScript">TypeScript</option>
-                            <option value="Python">Python</option>
-                            <option value="Go">Go</option>
-                            <option value="Rust">Rust</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Minimum Stars</label>
-                        <input type="number" id="stars-filter" placeholder="0">
-                    </div>
-                    <div class="filter-group">
-                        <label>Last Updated</label>
-                        <select id="updated-filter">
-                            <option value="">Any Time</option>
-                            <option value="month">This Month</option>
-                            <option value="week">This Week</option>
-                            <option value="year">This Year</option>
-                        </select>
-                    </div>
-                    <button id="apply-filters" class="btn btn-outline full-width">Apply Filters</button>
-                </aside>
+            <!-- Main Search Layout -->
+           <div class="search-layout">
+    <!-- Filters Sidebar -->
+    <aside class="filters-sidebar card" aria-label="Search filters">
+        <h3>Filters</h3>
 
-                <!-- Results Content -->
-                <section class="results-area">
-                    <div id="active-filters" class="active-filters-row"></div>
+        <div class="filter-group">
+            <label for="lang-filter">Language</label>
+            <select id="lang-filter">
+                <option value="">All Languages</option>
+                <option value="JavaScript">JavaScript</option>
+                <option value="TypeScript">TypeScript</option>
+                <option value="Python">Python</option>
+                <option value="Go">Go</option>
+                <option value="Rust">Rust</option>
+            </select>
+        </div>
 
-                    <div id="results-count" class="results-meta"></div>
+        <div class="filter-group">
+            <label for="stars-filter">Minimum Stars</label>
+            <input type="number" id="stars-filter" placeholder="0" min="0">
+        </div>
 
-                    <div id="search-results" class="results-grid">
-                        <!-- Search Results will be injected here -->
-                        <div class="empty-results">
-                            <i class="ri-compass-discover-line"></i>
-                            <p>Search for repositories using natural language.</p>
-                        </div>
-                    </div>
+        <div class="filter-group">
+            <label for="updated-filter">Last Updated</label>
+            <select id="updated-filter">
+                <option value="">Any Time</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="year">This Year</option>
+            </select>
+        </div>
 
-                    <div id="loading-state" class="hidden">
-                        <div class="loader"></div>
-                    </div>
+        <button id="apply-filters" class="btn btn-outline full-width">Apply Filters</button>
+    </aside>
 
-                    <!-- Infinite Scroll Anchor -->
-                    <div id="load-more-trigger"></div>
-                </section>
+    <!-- Results Section -->
+    <section class="results-area">
+        <div id="active-filters" class="active-filters-row" aria-live="polite"></div>
+        <div id="results-count" class="results-meta" aria-live="polite"></div>
+
+        <div id="search-results" class="results-grid" role="region" aria-label="Search results">
+            <div class="empty-results">
+                <i class="ri-compass-discover-line"></i>
+                <p>Search for repositories using natural language.</p>
             </div>
+        </div>
+
+        <div id="loading-state" class="hidden" role="status" aria-live="polite">
+            <div class="loader"></div>
+            <span class="sr-only">Loading results...</span>
+        </div>
+
+        <div id="load-more-trigger"></div>
+    </section>
+</div>
+
         </main>
     </div>
-     <div id="footer-placeholder"></div>
 
+    <!-- Footer Placeholder -->
+    <div id="footer-placeholder"></div>
+
+    <!-- Core Scripts -->
     <script src="theme.js"></script>
     <script src="search.js"></script>
     <script src="script.js"></script>

@@ -1,14 +1,32 @@
 const db = require("../config/db");
 
 class SearchModel {
+    constructor() {
+        // Max limits to prevent abuse
+        this.MAX_HISTORY = 50;
+        this.MAX_TRENDING = 10;
+        this.MAX_QUERY_LENGTH = 200;
+    }
+
+    /**
+     * Normalize query: trim, lowercase, max length
+     */
+    normalizeQuery(query) {
+        if (!query) return "";
+        return query.trim().toLowerCase().slice(0, this.MAX_QUERY_LENGTH);
+    }
+
     /**
      * Log a search query for analytics
      */
     async logSearch(userId, query, resultsCount) {
+        const q = this.normalizeQuery(query);
+        if (!q) return;
+
         return new Promise((resolve, reject) => {
             db.run(
                 "INSERT INTO search_logs (user_id, query, results_count) VALUES (?, ?, ?)",
-                [userId || null, query, resultsCount],
+                [userId || null, q, resultsCount || 0],
                 function (err) {
                     if (err) reject(err);
                     else resolve(this.lastID);
@@ -18,33 +36,51 @@ class SearchModel {
     }
 
     /**
-     * Add to search history for a user
+     * Add a query to search history for a user
      */
     async addToHistory(userId, query) {
         if (!userId) return;
+
+        const q = this.normalizeQuery(query);
+        if (!q) return;
+
         return new Promise((resolve, reject) => {
-            // First check if query already exists for user to avoid duplicates
             db.get(
                 "SELECT id FROM search_history WHERE user_id = ? AND query = ?",
-                [userId, query],
+                [userId, q],
                 (err, row) => {
-                    if (err) reject(err);
+                    if (err) return reject(err);
+
                     if (row) {
                         // Update timestamp for existing entry
                         db.run(
                             "UPDATE search_history SET updated_at = CURRENT_TIMESTAMP WHERE id = ?",
                             [row.id],
-                            err => err ? reject(err) : resolve(row.id)
+                            (err) => (err ? reject(err) : resolve(row.id))
                         );
                     } else {
                         // Insert new entry
                         db.run(
                             "INSERT INTO search_history (user_id, query) VALUES (?, ?)",
-                            [userId, query],
+                            [userId, q],
                             function (err) {
                                 if (err) reject(err);
-                                else resolve(this.lastID);
-                            }
+                                else {
+                                    // Optional: limit history to MAX_HISTORY items
+                                    db.run(
+                                        `DELETE FROM search_history 
+                                         WHERE id NOT IN (
+                                             SELECT id FROM search_history 
+                                             WHERE user_id = ? 
+                                             ORDER BY updated_at DESC 
+                                             LIMIT ?
+                                         ) AND user_id = ?`,
+                                        [userId, this.MAX_HISTORY, userId],
+                                        () => {}
+                                    );
+                                    resolve(this.lastID);
+                                }
+                            }.bind(this)
                         );
                     }
                 }
@@ -56,14 +92,13 @@ class SearchModel {
      * Get recent search history for a user
      */
     async getHistory(userId, limit = 10) {
+        limit = Math.min(Number(limit) || 10, this.MAX_HISTORY);
+
         return new Promise((resolve, reject) => {
             db.all(
                 "SELECT id, query, updated_at FROM search_history WHERE user_id = ? ORDER BY updated_at DESC LIMIT ?",
                 [userId, limit],
-                (err, rows) => {
-                    if (err) reject(err);
-                    else resolve(rows);
-                }
+                (err, rows) => (err ? reject(err) : resolve(rows))
             );
         });
     }
@@ -72,11 +107,12 @@ class SearchModel {
      * Clear search history for a user
      */
     async clearHistory(userId) {
+        if (!userId) return;
         return new Promise((resolve, reject) => {
             db.run(
                 "DELETE FROM search_history WHERE user_id = ?",
                 [userId],
-                err => err ? reject(err) : resolve()
+                (err) => (err ? reject(err) : resolve())
             );
         });
     }
@@ -85,6 +121,8 @@ class SearchModel {
      * Get trending searches (popular queries in last 7 days)
      */
     async getTrending(limit = 5) {
+        limit = Math.min(Number(limit) || 5, this.MAX_TRENDING);
+
         return new Promise((resolve, reject) => {
             db.all(
                 `SELECT query, COUNT(*) as count 
@@ -94,10 +132,7 @@ class SearchModel {
                  ORDER BY count DESC 
                  LIMIT ?`,
                 [limit],
-                (err, rows) => {
-                    if (err) reject(err);
-                    else resolve(rows);
-                }
+                (err, rows) => (err ? reject(err) : resolve(rows))
             );
         });
     }
