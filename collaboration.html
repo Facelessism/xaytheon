@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="collaboration.css" />
     <link rel="stylesheet" href="style.css?v=3">
+
     <!-- Supabase SDK & Auth -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.4/dist/umd/supabase.min.js"></script>
     <script defer src="auth.js"></script>
@@ -21,7 +22,7 @@
 
 <body class="eightgon-page">
     <div class="page-wrapper">
-        <div id="header-placeholder"></div>
+        <header id="header-placeholder"></header>
 
         <main class="collab-container">
             <header class="collab-header">
@@ -50,7 +51,10 @@
                                 Repository items and shared tasks will appear here.
                                 Modifications made by any user in this room will be synced instantly.
                             </p>
-                            <div id="shared-list" class="shared-list">
+                            <div
+                                id="shared-list"
+                                class="shared-list"
+                                aria-live="polite">
                                 <!-- Dynamic content -->
                             </div>
                         </div>
@@ -65,7 +69,10 @@
                             <h4>Online Users</h4>
                         </div>
                         <div class="card-body">
-                            <ul id="user-list" class="user-list">
+                            <ul
+                                id="user-list"
+                                class="user-list"
+                                aria-live="polite">
                                 <!-- Dynamic user items -->
                                 <li class="muted">Waiting for others...</li>
                             </ul>
@@ -78,7 +85,10 @@
                             <h4>Live Activity</h4>
                         </div>
                         <div class="card-body">
-                            <div id="activity-feed" class="activity-feed">
+                            <div
+                                id="activity-feed"
+                                class="activity-feed"
+                                aria-live="polite">
                                 <!-- Dynamic activity logs -->
                             </div>
                         </div>
@@ -86,7 +96,8 @@
                 </aside>
             </div>
         </main>
-        <div id="footer-placeholder"></div>
+
+        <footer id="footer-placeholder"></footer>
     </div>
 
     <script src="theme.js"></script>
