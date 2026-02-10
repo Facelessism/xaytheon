@@ -36,32 +36,37 @@
     <!-- Header -->
     <div id="header-placeholder"></div>
 
-    <main class="heatmap-page">
+    <main class="heatmap-page" role="main">
 
         <!-- ===== HEATMAP CARD ===== -->
-        <article class="card heatmap-card" id="capture-area">
+        <article class="card heatmap-card" id="capture-area" aria-labelledby="heatmap-title">
 
             <header class="heatmap-header">
-                <h2>🔥 Contribution Heatmap</h2>
+                <h2 id="heatmap-title">🔥 Contribution Heatmap</h2>
                 <button id="export-btn" class="btn btn-primary">
                     Export PNG
                 </button>
             </header>
 
             <!-- Heatmap SVG container -->
-            <div id="heatmap-svg-container" class="heatmap-container">
+            <div
+                id="heatmap-svg-container"
+                class="heatmap-container"
+                role="img"
+                aria-label="Contribution heatmap showing activity intensity by day"
+            >
                 <!-- SVG injected by heatmap.js -->
             </div>
 
             <!-- Legend -->
-            <div class="heatmap-legend">
+            <div class="heatmap-legend" aria-label="Heatmap intensity legend">
                 <span>Less</span>
-                <ul class="legend-colors">
-                    <li></li>
-                    <li></li>
-                    <li></li>
-                    <li></li>
-                    <li></li>
+                <ul class="legend-colors" role="list">
+                    <li role="listitem" aria-label="No contributions"></li>
+                    <li role="listitem" aria-label="Low contributions"></li>
+                    <li role="listitem" aria-label="Moderate contributions"></li>
+                    <li role="listitem" aria-label="High contributions"></li>
+                    <li role="listitem" aria-label="Very high contributions"></li>
                 </ul>
                 <span>More</span>
             </div>
@@ -69,7 +74,7 @@
         </article>
 
         <!-- ===== INSIGHTS SECTION ===== -->
-        <section class="insights-section">
+        <section class="insights-section" aria-label="Contribution insights">
 
             <!-- Streaks -->
             <article class="card insight-card">
@@ -78,17 +83,32 @@
                 <div class="insight-content">
                     <div class="stat-row">
                         <span class="stat-label">Current Streak</span>
-                        <span class="stat-value big" id="current-streak">0 days</span>
+                        <span
+                            class="stat-value big"
+                            id="current-streak"
+                            aria-live="polite"
+                            aria-atomic="true"
+                        >0 days</span>
                     </div>
 
                     <div class="stat-row">
                         <span class="stat-label">Longest Streak</span>
-                        <span class="stat-value" id="longest-streak">0 days</span>
+                        <span
+                            class="stat-value"
+                            id="longest-streak"
+                            aria-live="polite"
+                            aria-atomic="true"
+                        >0 days</span>
                     </div>
 
                     <div class="stat-row">
                         <span class="stat-label">Total Contributions</span>
-                        <span class="stat-value" id="total-attrib">0</span>
+                        <span
+                            class="stat-value"
+                            id="total-attrib"
+                            aria-live="polite"
+                            aria-atomic="true"
+                        >0</span>
                     </div>
                 </div>
             </article>
@@ -100,12 +120,22 @@
                 <div class="insight-content">
                     <div class="stat-row">
                         <span class="stat-label">Best Day</span>
-                        <span class="stat-value big" id="best-day">-</span>
+                        <span
+                            class="stat-value big"
+                            id="best-day"
+                            aria-live="polite"
+                            aria-atomic="true"
+                        >-</span>
                     </div>
 
                     <div class="stat-row">
                         <span class="stat-label">Most Productive Hour</span>
-                        <span class="stat-value" id="best-hour">-</span>
+                        <span
+                            class="stat-value"
+                            id="best-hour"
+                            aria-live="polite"
+                            aria-atomic="true"
+                        >-</span>
                     </div>
 
                     <p class="insight-tip" id="insight-tip">
@@ -119,26 +149,60 @@
                 <h3>🎨 Theme</h3>
 
                 <div class="insight-content">
-                    <div class="theme-options" role="group" aria-label="Heatmap color themes">
-                        <button class="theme-btn active" data-theme="default"
+                    <div
+                        class="theme-options"
+                        role="radiogroup"
+                        aria-label="Heatmap color themes"
+                    >
+                        <button
+                            class="theme-btn active"
+                            data-theme="default"
                             style="background:var(--accent-color)"
-                            aria-label="Default theme"></button>
+                            role="radio"
+                            aria-checked="true"
+                            tabindex="0"
+                            aria-label="Default theme"
+                        ></button>
 
-                        <button class="theme-btn" data-theme="fire"
+                        <button
+                            class="theme-btn"
+                            data-theme="fire"
                             style="background:#f59e0b"
-                            aria-label="Fire theme"></button>
+                            role="radio"
+                            aria-checked="false"
+                            tabindex="-1"
+                            aria-label="Fire theme"
+                        ></button>
 
-                        <button class="theme-btn" data-theme="ocean"
+                        <button
+                            class="theme-btn"
+                            data-theme="ocean"
                             style="background:#0ea5e9"
-                            aria-label="Ocean theme"></button>
+                            role="radio"
+                            aria-checked="false"
+                            tabindex="-1"
+                            aria-label="Ocean theme"
+                        ></button>
 
-                        <button class="theme-btn" data-theme="forest"
+                        <button
+                            class="theme-btn"
+                            data-theme="forest"
                             style="background:#22c55e"
-                            aria-label="Forest theme"></button>
+                            role="radio"
+                            aria-checked="false"
+                            tabindex="-1"
+                            aria-label="Forest theme"
+                        ></button>
 
-                        <button class="theme-btn" data-theme="pink"
+                        <button
+                            class="theme-btn"
+                            data-theme="pink"
                             style="background:#ec4899"
-                            aria-label="Pink theme"></button>
+                            role="radio"
+                            aria-checked="false"
+                            tabindex="-1"
+                            aria-label="Pink theme"
+                        ></button>
                     </div>
 
                     <p class="theme-help">
