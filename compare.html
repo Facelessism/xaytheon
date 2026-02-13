@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Repository Comparison — XAYTHEON</title>
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="compare.css" />
     <link rel="stylesheet" href="style.css?v=3">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
@@ -35,15 +34,18 @@
             <div class="compare-controls">
                 <div class="input-grid">
                     <div class="repo-input-wrapper">
-                        <input type="text" id="repo-1" placeholder="owner/repo (e.g. mrdoob/three.js)"
+                        <div class="repo-input-wrapper"><label for="repo-1">Repository 1</label>
+                            <input type="text" id="repo-1" placeholder="owner/repo (e.g. mrdoob/three.js)" class="repo-field" /></div>
                             class="repo-field" />
                     </div>
                     <div class="repo-input-wrapper">
-                        <input type="text" id="repo-2" placeholder="owner/repo (e.g. pmndrs/three-fiber)"
+                        <div class="repo-input-wrapper"><label for="repo-2">Repository 2</label>
+                            <input type="text" id="repo-2" placeholder="owner/repo (e.g. pmndrs/three-fiber)" class="repo-field" /></div>
                             class="repo-field" />
                     </div>
                     <div class="repo-input-wrapper">
-                        <input type="text" id="repo-3" placeholder="owner/repo (optional)" class="repo-field" />
+                        <div class="repo-input-wrapper"><label for="repo-3">Repository 3 (Optional)</label>
+                            <input type="text" id="repo-3" placeholder="owner/repo (optional)" class="repo-field" /></div>
                     </div>
                 </div>
                 <div class="action-buttons">
@@ -66,13 +68,20 @@
                         <div class="chart-card">
                             <h3 data-i18n="compare.healthChart">Health & Activity Radar</h3>
                             <div class="chart-wrapper">
-                                <canvas id="radarChart"></canvas>
+                                <canvas id="radarChart" role="img"
+                                    aria-label="Radar chart comparing repository health and activity metrics">
+                                    Radar chart comparing repository health and activity metrics.
+                                </canvas>
                             </div>
                         </div>
                         <div class="chart-card">
                             <h3 data-i18n="compare.statsChart">Key Metrics Comparison</h3>
                             <div class="chart-wrapper">
-                                <canvas id="barChart"></canvas>
+                                <canvas id="barChart" role="img"
+                                    aria-label="Bar chart comparing key repository metrics side by side">
+                                    Bar chart comparing repository metrics.
+                                </canvas>
+
                             </div>
                         </div>
                     </div>
