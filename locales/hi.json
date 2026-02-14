@@ -186,5 +186,24 @@
         "daysAgo": "{count} दिन पहले",
         "monthsAgo": "{count} महीने पहले",
         "yearsAgo": "{count} साल पहले"
+    },
+    "observability": {
+        "title": "ट्रेस पल्स 3D",
+        "subtitle": "सिस्टम आर्किटेक्चर और रीयल-टाइम ट्रैफ़िक विश्लेषण",
+        "stats": {
+            "latency": "औसत विलंबता",
+            "throughput": "थ्रूपुट",
+            "health": "सिस्टम स्वास्थ्य"
+        },
+        "controls": {
+            "rotate": "घुमाएँ",
+            "pan": "पैन",
+            "zoom": "ज़ूम",
+            "hover": "नोड इंटेल"
+        },
+        "alerts": {
+            "bottleneck": "गंभीर बाधा का पता चला",
+            "optimization": "AI अनुकूलन अवसर"
+        }
     }
 }

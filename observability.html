@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live-Wire 3D Observability | XAYTHEON</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="observability.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+
+<body>
+    <div class="observability-wrapper">
+        <div id="header-placeholder"></div>
+
+        <canvas id="observability-canvas"></canvas>
+
+        <div class="hud-overlay">
+            <header class="hud-header">
+                <div class="hud-title">
+                    <h1 data-i18n="observability.title">Trace Pulse 3D</h1>
+                    <p data-i18n="observability.subtitle">SYSTEM ARCHITECTURE & REAL-TIME TRAFFIC ANALYSIS</p>
+                </div>
+
+                <div class="hud-stats">
+                    <div class="stat-item">
+                        <span class="stat-value" id="stat-latency">-- ms</span>
+                        <span class="stat-label" data-i18n="observability.stats.latency">Avg Latency</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="stat-throughput">-- req/s</span>
+                        <span class="stat-label" data-i18n="observability.stats.throughput">Throughput</span>
+                    </div>
+                    <div class="stat-item" style="border-color: var(--accent-green);">
+                        <span class="stat-value" id="stat-health" style="color: var(--accent-green);">100%</span>
+                        <span class="stat-label" data-i18n="observability.stats.health">System Health</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="hud-bottom">
+                <div id="alerts-container" class="bottleneck-alerts">
+                    <!-- AI Alerts will be injected here -->
+                </div>
+
+                <div class="controls-hint">
+                    <i class="ri-mouse-line"></i> <span data-i18n="observability.controls.rotate">Rotate</span> | <i
+                        class="ri-drag-move-fill"></i> <span data-i18n="observability.controls.pan">Pan</span> | <i
+                        class="ri-zoom-in-line"></i> <span data-i18n="observability.controls.zoom">Zoom</span> | <i
+                        class="ri-cursor-line"></i> <span data-i18n="observability.controls.hover">Node Intel</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="node-tooltip"></div>
+    </div>
+
+    <script src="observability.js"></script>
+    <script>
+        // Load navbar
+        fetch('navbar.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('header-placeholder').innerHTML = data;
+            });
+    </script>
+</body>
+
+</html>

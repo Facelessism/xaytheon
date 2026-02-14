@@ -196,5 +196,24 @@
         "daysAgo": "{count} days ago",
         "monthsAgo": "{count} months ago",
         "yearsAgo": "{count} years ago"
+    },
+    "observability": {
+        "title": "Trace Pulse 3D",
+        "subtitle": "SYSTEM ARCHITECTURE & REAL-TIME TRAFFIC ANALYSIS",
+        "stats": {
+            "latency": "Avg Latency",
+            "throughput": "Throughput",
+            "health": "System Health"
+        },
+        "controls": {
+            "rotate": "Rotate",
+            "pan": "Pan",
+            "zoom": "Zoom",
+            "hover": "Node Intel"
+        },
+        "alerts": {
+            "bottleneck": "Critical Bottleneck Detected",
+            "optimization": "AI Optimization Opportunity"
+        }
     }
 }
