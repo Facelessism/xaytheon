@@ -1,0 +1,407 @@
+/* War Room Styles */
+
+.war-room-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: linear-gradient(135deg, #050508 0%, #0f0a1e 100%);
+}
+
+#war-room-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.war-room-hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.war-room-hud>* {
+    pointer-events: auto;
+}
+
+/* Top Bar */
+.top-bar {
+    position: absolute;
+    top: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    backdrop-filter: blur(20px);
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+}
+
+.incident-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.incident-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid #ef4444;
+    border-radius: 8px;
+    color: #ef4444;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.incident-status {
+    padding: 0.5rem 1rem;
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid #10b981;
+    border-radius: 8px;
+    color: #10b981;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.participants-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #94a3b8;
+    font-size: 0.9rem;
+}
+
+.participant-avatars {
+    display: flex;
+    gap: -0.5rem;
+}
+
+.participant-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid #1e293b;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+}
+
+/* Status Feed */
+.status-feed {
+    position: absolute;
+    top: 6rem;
+    right: 1.5rem;
+    width: 350px;
+    max-height: 400px;
+    padding: 1.5rem;
+    backdrop-filter: blur(20px);
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+}
+
+.status-feed h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    color: #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status-messages {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.status-msg {
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-left: 3px solid #3b82f6;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.status-msg.system {
+    border-left-color: #64748b;
+    color: #94a3b8;
+}
+
+.status-msg.user {
+    border-left-color: #3b82f6;
+}
+
+.status-msg.critical {
+    border-left-color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.status-msg .timestamp {
+    color: #64748b;
+    font-size: 0.75rem;
+    margin-right: 0.5rem;
+}
+
+.status-msg .user-name {
+    color: #60a5fa;
+    font-weight: 600;
+    margin-right: 0.5rem;
+}
+
+.status-input {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.status-input input {
+    flex: 1;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #e2e8f0;
+    font-size: 0.85rem;
+}
+
+.status-input button {
+    padding: 0.75rem 1rem;
+    background: #3b82f6;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.status-input button:hover {
+    background: #2563eb;
+    transform: scale(1.05);
+}
+
+/* Pins Panel */
+.pins-panel {
+    position: absolute;
+    top: 6rem;
+    left: 1.5rem;
+    width: 300px;
+    max-height: 400px;
+    padding: 1.5rem;
+    backdrop-filter: blur(20px);
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+}
+
+.pins-panel h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    color: #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pins-list {
+    overflow-y: auto;
+    max-height: 300px;
+}
+
+.empty-state {
+    text-align: center;
+    color: #64748b;
+    font-size: 0.85rem;
+    padding: 2rem 0;
+}
+
+.pin-item {
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-left: 3px solid #fbbf24;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.pin-item.critical {
+    border-left-color: #ef4444;
+}
+
+.pin-item.high {
+    border-left-color: #f97316;
+}
+
+.pin-item.medium {
+    border-left-color: #fbbf24;
+}
+
+.pin-item.low {
+    border-left-color: #3b82f6;
+}
+
+.pin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.pin-user {
+    color: #60a5fa;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+.pin-time {
+    color: #64748b;
+    font-size: 0.7rem;
+}
+
+.pin-message {
+    color: #e2e8f0;
+    margin-bottom: 0.5rem;
+}
+
+.pin-node {
+    color: #94a3b8;
+    font-size: 0.75rem;
+}
+
+.pin-remove {
+    background: rgba(239, 68, 68, 0.2);
+    border: none;
+    color: #ef4444;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    margin-top: 0.5rem;
+}
+
+/* Controls Panel */
+.controls-panel {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 1rem;
+    backdrop-filter: blur(20px);
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    display: flex;
+    gap: 1rem;
+}
+
+.control-btn {
+    padding: 0.75rem 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #e2e8f0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.control-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.control-btn.primary {
+    background: #3b82f6;
+    border-color: #3b82f6;
+}
+
+.control-btn.primary:hover {
+    background: #2563eb;
+}
+
+.control-btn.active {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: #10b981;
+    color: #10b981;
+}
+
+/* Connection Status */
+.connection-status {
+    position: absolute;
+    bottom: 2rem;
+    right: 2rem;
+    padding: 0.75rem 1.5rem;
+    backdrop-filter: blur(20px);
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 30px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: #94a3b8;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #64748b;
+}
+
+.status-dot.connecting {
+    background: #fbbf24;
+    animation: pulse 1.5s infinite;
+}
+
+.status-dot.connected {
+    background: #10b981;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+.status-dot.disconnected {
+    background: #ef4444;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Glass effect */
+.glass {
+    backdrop-filter: blur(20px);
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}

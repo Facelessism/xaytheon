@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incident War Room | XAYTHEON</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="war-room.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+
+<body class="dark-theme">
+    <div id="header-placeholder"></div>
+
+    <main class="war-room-container">
+        <!-- 3D Observability Canvas -->
+        <canvas id="war-room-canvas"></canvas>
+
+        <!-- War Room HUD -->
+        <div class="war-room-hud">
+            <!-- Top Bar -->
+            <div class="top-bar glass">
+                <div class="incident-info">
+                    <span class="incident-badge">
+                        <i class="ri-alarm-warning-fill"></i>
+                        <span id="incident-id">INCIDENT-2026-001</span>
+                    </span>
+                    <span class="incident-status" id="incident-status">ACTIVE</span>
+                </div>
+
+                <div class="participants-bar">
+                    <i class="ri-team-fill"></i>
+                    <span id="participant-count">1</span> Active
+                    <div class="participant-avatars" id="participant-avatars"></div>
+                </div>
+            </div>
+
+            <!-- Live Status Feed -->
+            <div class="status-feed glass">
+                <h3><i class="ri-broadcast-line"></i> Live Status</h3>
+                <div class="status-messages" id="status-messages">
+                    <div class="status-msg system">
+                        <span class="timestamp">20:00:00</span>
+                        <span class="message">War Room initialized</span>
+                    </div>
+                </div>
+                <div class="status-input">
+                    <input type="text" id="status-input" placeholder="Broadcast status update...">
+                    <button id="send-status-btn"><i class="ri-send-plane-fill"></i></button>
+                </div>
+            </div>
+
+            <!-- Incident Pins Panel -->
+            <div class="pins-panel glass">
+                <h3><i class="ri-pushpin-fill"></i> Incident Pins</h3>
+                <div class="pins-list" id="pins-list">
+                    <p class="empty-state">No pins created yet</p>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls-panel glass">
+                <button id="create-pin-btn" class="control-btn primary">
+                    <i class="ri-pushpin-2-fill"></i> Create Pin
+                </button>
+                <button id="toggle-camera-sync" class="control-btn">
+                    <i class="ri-camera-3-fill"></i> Sync Camera
+                </button>
+                <button id="toggle-cursor-sync" class="control-btn active">
+                    <i class="ri-cursor-fill"></i> Show Cursors
+                </button>
+            </div>
+
+            <!-- Connection Status -->
+            <div class="connection-status" id="connection-status">
+                <div class="status-dot connecting"></div>
+                <span>Connecting...</span>
+            </div>
+        </div>
+    </main>
+
+    <script src="boilerplate/boilerplate-loader.js"></script>
+    <script src="war-room.js"></script>
+</body>
+
+</html>
