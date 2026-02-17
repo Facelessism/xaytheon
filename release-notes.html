@@ -15,7 +15,6 @@
 
 <body class="eightgon-page">
     <div class="page-wrapper">
-       
 
         <main class="release-container">
             <header class="release-header">
@@ -27,12 +26,11 @@
             </header>
 
             <div class="generator-layout">
-                <!-- Configuration Sidebar -->
                 <aside class="config-sidebar card">
                     <h3>Release Config</h3>
                     <div class="form-group">
                         <label for="repo-name">Repository</label>
-                        <input type="text" id="repo-name" placeholder="owner/repo" value="SatyamPandey-07/xaytheon">
+                        <input type="text" id="repo-name" placeholder="owner/repo" value="Saatvik-GT/xaytheon">
                     </div>
                     <div class="form-group">
                         <label for="base-tag">Base Tag (from)</label>
@@ -55,7 +53,7 @@
                     </div>
 
                     <button id="generate-btn" class="btn btn-primary full-width">
-                        <i class="ri-magic-line"></i> Generate Notes
+                        <i class="ri-magic-line" aria-hidden="true"></i> Generate Notes
                     </button>
                 </aside>
 
@@ -68,40 +66,43 @@
                             <button class="tab-btn" data-tab="json">JSON</button>
                         </div>
                         <div class="output-actions">
-                            <button id="copy-btn" class="btn btn-outline btn-sm"><i class="ri-file-copy-line"></i>
-                                Copy</button>
-                            <button id="publish-btn" class="btn btn-secondary btn-sm" disabled><i
-                                    class="ri-github-fill"></i> Publish to GitHub</button>
+                            <button id="copy-btn" class="btn btn-outline btn-sm">
+                                <i class="ri-file-copy-line" aria-hidden="true"></i> Copy
+                            </button>
+                            <button id="publish-btn" class="btn btn-secondary btn-sm" disabled>
+                                <i class="ri-github-fill" aria-hidden="true"></i> Publish to GitHub
+                            </button>
                         </div>
                     </div>
 
-                    <div id="loading-overlay" class="hidden">
+                    <!-- Loading Overlay -->
+                    <div id="loading-overlay" class="hidden" aria-hidden="true" role="status" aria-live="polite">
                         <div class="loader"></div>
                         <p>Analyzing commits and grouping changes...</p>
                     </div>
 
                     <div class="tab-content" id="preview-tab">
                         <div class="empty-state">
-                            <i class="ri-draft-line"></i>
+                            <i class="ri-draft-line" aria-hidden="true"></i>
                             <p>Configure your release and hit generate to see the notes.</p>
                         </div>
-                        <div id="preview-area" class="preview-content card hidden"></div>
+                        <div id="preview-area" class="preview-content card hidden" aria-hidden="true"></div>
                     </div>
 
-                    <div class="tab-content hidden" id="markdown-tab">
+                    <div class="tab-content hidden" id="markdown-tab" aria-hidden="true">
                         <textarea id="markdown-area" class="code-area"></textarea>
                     </div>
 
-                    <div class="tab-content hidden" id="json-tab">
+                    <div class="tab-content hidden" id="json-tab" aria-hidden="true">
                         <pre id="json-area" class="code-area"></pre>
                     </div>
                 </section>
             </div>
         </main>
     </div>
-     
-    
-<div id="footer-placeholder"></div>
+
+    <div id="footer-placeholder"></div>
+
     <script src="boilerplate/boilerplate-loader.js"></script>
     <script src="release.js"></script>
     <script src="script.js"></script>
