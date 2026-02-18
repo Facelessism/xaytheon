@@ -1,8 +1,8 @@
-<nav class="navbar">
+<nav class="navbar" aria-label="Primary Navigation">
     <div class="nav-container">
         <!-- Logo -->
-        <a class="logo" href="index.html" aria-label="XAYTHEON home">
-            <img class="logo-img" src="assets/logo/thelogo.png" alt="XAYTHEON logo" />
+        <a class="logo" href="index.html">
+            <img class="logo-img" src="assets/logo/thelogo.png" alt="XAYTHEON home" />
         </a>
 
         <!-- Navigation Menu -->
@@ -27,10 +27,10 @@
 
             <!-- More Dropdown -->
             <li class="nav-more">
-                <button class="nav-link more-toggle" aria-haspopup="true" aria-expanded="false">
+                <button class="nav-link more-toggle" aria-haspopup="true" aria-expanded="false" aria-controls="more-menu">
                     More ▾
                 </button>
-                <ul class="more-menu">
+                <ul class="more-menu" id="more-menu">
                     <li><a class="nav-link" href="sentiment.html">Sentiment</a></li>
                     <li><a class="nav-link" href="watchlist.html">Watchlist</a></li>
                     <li><a class="nav-link" href="compare.html">Compare</a></li>
@@ -38,30 +38,27 @@
                     <li><a class="nav-link" href="community.html">Community Highlights</a></li>
                     <li><a class="nav-link" href="health.html">Health Auditor</a></li>
                     <li>
-                        <a class="nav-link" href="collaboration.html" aria-label="Shared Workspace"
-                            data-page="Shared Workspace">
-                            <i class="ri-team-line"></i>
-                            <span class="tooltip">Shared Workspace</span>
+                        <a class="nav-link" href="collaboration.html" data-page="Shared Workspace">
+                            <i class="ri-team-line" aria-hidden="true"></i>
+                            <span>Shared Workspace</span>
                         </a>
                     </li>
                     <li>
-                        <a class="nav-link" href="workflow-builder.html" aria-label="Workflow Builder"
-                            data-page="Workflow Builder">
-                            <i class="ri-flow-chart"></i>
-                            <span class="tooltip">Workflow Builder</span>
+                        <a class="nav-link" href="workflow-builder.html" data-page="Workflow Builder">
+                            <i class="ri-flow-chart" aria-hidden="true"></i>
+                            <span>Workflow Builder</span>
                         </a>
                     </li>
                     <li>
-                        <a class="nav-link" href="smart-search.html" aria-label="Smart Search" data-page="Smart Search">
-                            <i class="ri-search-eye-line"></i>
-                            <span class="tooltip">Smart Search</span>
+                        <a class="nav-link" href="smart-search.html" data-page="Smart Search">
+                            <i class="ri-search-eye-line" aria-hidden="true"></i>
+                            <span>Smart Search</span>
                         </a>
                     </li>
                     <li>
-                        <a class="nav-link" href="dependency-graph.html" aria-label="Dependency Graph"
-                            data-page="Dependency Graph">
-                            <i class="ri-node-tree"></i>
-                            <span class="tooltip">Dependency Graph</span>
+                        <a class="nav-link" href="dependency-graph.html" data-page="Dependency Graph">
+                            <i class="ri-node-tree" aria-hidden="true"></i>
+                            <span>Dependency Graph</span>
                         </a>
                     </li>
                     <li><a class="nav-link" href="explore.html">Explore by Topic</a></li>
@@ -77,7 +74,7 @@
 
             <!-- Theme Toggle -->
             <li>
-                <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+                <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false">
                     <svg class="theme-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="5" />
@@ -98,7 +95,11 @@
         </ul>
 
         <!-- Mobile Menu Icons -->
-        <i class="ri-menu-2-line menu-icon"></i>
-        <i class="ri-close-large-fill menu-close-icon"></i>
+        <button class="menu-icon" aria-label="Open menu">
+            <i class="ri-menu-2-line" aria-hidden="true"></i>
+        </button>
+        <button class="menu-close-icon" aria-label="Close menu">
+            <i class="ri-close-large-fill" aria-hidden="true"></i>
+        </button>
     </div>
 </nav>
