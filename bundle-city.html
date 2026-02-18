@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="description" content="Interactive 3D bundle visualization dashboard with analytics, pruning insights, and performance metrics.">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bundle City — XAYTHEON</title>
 
@@ -22,7 +23,11 @@
     <main class="bundle-city-container">
 
         <!-- 3D Canvas -->
-        <div id="city-viewport"></div>
+        <div
+            id="city-viewport"
+            role="application"
+            aria-label="Interactive 3D bundle city visualization">
+        </div>
 
         <!-- Overlay UI -->
         <div class="ui-overlay">
@@ -80,7 +85,7 @@
                         id="ai-suggestions"
                         class="suggestions-list"
                         aria-live="polite"
-                        aria-busy="true">
+                        aria-busy="false">
 
                         <div class="loading-shimmer">
                             Analyzing city structure...
@@ -126,16 +131,19 @@
             hidden>
 
             <div class="modal-content glass">
-                <h2 id="demolition-title">⚠️ Demolition Order</h2>
+                <h2 id="demolition-title">
+                    <span aria-hidden="true">⚠️</span>
+                    Demolition Order
+                </h2>
                 <p id="demolition-text">
                     Are you sure you want to prune this module from the bundle?
                 </p>
 
                 <div class="modal-actions">
-                    <button id="cancel-demo" class="btn btn-secondary">
+                    <button id="cancel-demo" class="btn btn-secondary" type="button">
                         Abort
                     </button>
-                    <button id="confirm-demo" class="btn btn-danger">
+                    <button id="confirm-demo" class="btn btn-danger" type="button">
                         Demolish
                     </button>
                 </div>
