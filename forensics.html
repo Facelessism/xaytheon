@@ -4,47 +4,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Interactive forensic time-travel analytics dashboard to scrub through project health metrics, visualize trends, and analyze historical performance.">
     <title>Forensic Time-Travel | XAYTHEON</title>
+
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="forensics.css">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" defer></script>
 </head>
 
 <body class="dark-theme">
+
+    <noscript>
+        <div style="padding:1rem; text-align:center; background:#111; color:#fff;">
+            This dashboard requires JavaScript to function properly.
+        </div>
+    </noscript>
+
     <div id="header-placeholder"></div>
 
     <main class="forensics-container">
+
         <!-- 3D Time-Slicer Viewport -->
-        <div id="time-slicer-viewport"></div>
+        <div id="time-slicer-viewport" role="region" aria-label="3D Time Slicer Visualization"></div>
 
         <!-- HUD Overlay -->
         <div class="forensics-hud">
+
             <!-- Top Panel -->
             <div class="top-panel glass">
-                <h1><i class="ri-time-line"></i> Forensic Time-Travel Analytics</h1>
+                <h1><i class="ri-time-line" aria-hidden="true"></i> Forensic Time-Travel Analytics</h1>
                 <p class="subtitle">Scrub through 6 months of project health history</p>
             </div>
 
             <!-- Temporal Scrubber -->
             <div class="scrubber-panel glass">
                 <div class="scrubber-header">
-                    <span id="current-date">Loading...</span>
-                    <span id="health-score-display" class="health-badge">--</span>
+                    <span id="current-date" aria-live="polite">Loading...</span>
+                    <span id="health-score-display" class="health-badge" aria-live="polite">--</span>
                 </div>
 
                 <div class="timeline-container">
-                    <input type="range" id="time-slider" min="0" max="100" value="100" class="time-slider">
+                    <label for="time-slider" class="visually-hidden">Timeline scrubber</label>
+                    <input 
+                        type="range" 
+                        id="time-slider" 
+                        min="0" 
+                        max="100" 
+                        value="100" 
+                        class="time-slider"
+                        aria-label="Timeline scrubber control">
                     <div class="timeline-markers" id="timeline-markers"></div>
                 </div>
 
                 <div class="playback-controls">
-                    <button id="play-btn" class="control-btn"><i class="ri-play-fill"></i></button>
-                    <button id="pause-btn" class="control-btn hidden"><i class="ri-pause-fill"></i></button>
-                    <button id="reset-btn" class="control-btn"><i class="ri-restart-line"></i></button>
-                    <select id="speed-select" class="speed-select">
+                    <button id="play-btn" class="control-btn" aria-label="Play timeline">
+                        <i class="ri-play-fill" aria-hidden="true"></i>
+                    </button>
+                    <button id="pause-btn" class="control-btn hidden" aria-label="Pause timeline">
+                        <i class="ri-pause-fill" aria-hidden="true"></i>
+                    </button>
+                    <button id="reset-btn" class="control-btn" aria-label="Reset timeline">
+                        <i class="ri-restart-line" aria-hidden="true"></i>
+                    </button>
+                    <select id="speed-select" class="speed-select" aria-label="Playback speed selector">
                         <option value="0.5">0.5x</option>
                         <option value="1" selected>1x</option>
                         <option value="2">2x</option>
@@ -59,27 +85,27 @@
                 <div class="metrics-grid">
                     <div class="metric-card">
                         <span class="metric-label">Complexity</span>
-                        <span class="metric-value" id="metric-complexity">--</span>
+                        <span class="metric-value" id="metric-complexity" aria-live="polite">--</span>
                     </div>
                     <div class="metric-card">
                         <span class="metric-label">Risk Score</span>
-                        <span class="metric-value" id="metric-risk">--</span>
+                        <span class="metric-value" id="metric-risk" aria-live="polite">--</span>
                     </div>
                     <div class="metric-card">
                         <span class="metric-label">Build Speed</span>
-                        <span class="metric-value" id="metric-build">--s</span>
+                        <span class="metric-value" id="metric-build" aria-live="polite">--s</span>
                     </div>
                     <div class="metric-card">
                         <span class="metric-label">Test Coverage</span>
-                        <span class="metric-value" id="metric-coverage">--%</span>
+                        <span class="metric-value" id="metric-coverage" aria-live="polite">--%</span>
                     </div>
                     <div class="metric-card">
                         <span class="metric-label">Code Churn</span>
-                        <span class="metric-value" id="metric-churn">--</span>
+                        <span class="metric-value" id="metric-churn" aria-live="polite">--</span>
                     </div>
                     <div class="metric-card">
                         <span class="metric-label">Tech Debt</span>
-                        <span class="metric-value" id="metric-debt">--</span>
+                        <span class="metric-value" id="metric-debt" aria-live="polite">--</span>
                     </div>
                 </div>
             </div>
@@ -90,23 +116,24 @@
                 <div class="summary-stats">
                     <div class="stat-row">
                         <span>Average Health:</span>
-                        <span id="avg-health">--</span>
+                        <span id="avg-health" aria-live="polite">--</span>
                     </div>
                     <div class="stat-row">
                         <span>Critical Weeks:</span>
-                        <span id="critical-weeks">--</span>
+                        <span id="critical-weeks" aria-live="polite">--</span>
                     </div>
                     <div class="stat-row">
                         <span>Health Trend:</span>
-                        <span id="health-trend">--</span>
+                        <span id="health-trend" aria-live="polite">--</span>
                     </div>
                 </div>
             </div>
+
         </div>
     </main>
 
-    <script src="boilerplate/boilerplate-loader.js"></script>
-    <script src="forensics.js"></script>
-</body>
+    <script src="boilerplate/boilerplate-loader.js" defer></script>
+    <script src="forensics.js" defer></script>
 
+</body>
 </html>
