@@ -3,6 +3,7 @@
  * Handles data fetching, chart rendering, and user interactions
  */
 
+import ErrorHandler from './js/errorHandler.js';
 // Configuration
 const API_BASE_URL = 'http://127.0.0.1:5000/api';
 let currentUser = null;
